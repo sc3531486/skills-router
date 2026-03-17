@@ -732,12 +732,13 @@ class SkillRouterV2Tests(unittest.TestCase):
             self.assertEqual(payload["final_plan"]["chosen_plan_id"], "direct-doc")
             self.assertEqual(payload["final_plan"]["ordered_steps"][0]["executor_id"], "skill:agents:doc-writer")
             self.assertTrue(payload["final_plan"]["validation"]["is_valid"])
-            self.assertTrue(payload["final_plan"]["execution_ready"])
+            self.assertFalse(payload["final_plan"]["execution_ready"])
+            self.assertTrue(payload["final_plan"]["ready_after_user_confirmation"])
             self.assertTrue(payload["final_plan"]["presentation_contract"]["must_show_to_user_before_execution"])
             self.assertTrue(payload["final_plan"]["execution_gate"]["requires_user_confirmation"])
-            self.assertEqual(payload["final_plan"]["execution_gate"]["next_action"], "show_plan_and_wait_for_confirmation")
+            self.assertEqual(payload["final_plan"]["execution_gate"]["next_action"], "show_plan_and_stop")
             self.assertNotIn("The skill already covers the document task.", payload["user_summary"])
-            self.assertIn("先向用户展示", payload["user_summary"])
+            self.assertIn("当前只展示编排结果", payload["user_summary"])
             self.assertEqual(payload["task_profile"]["actions"], ["summarize"])
             self.assertEqual(payload["task_profile"]["quality_goals"], ["accuracy"])
             self.assertFalse(payload["task_profile"]["bounded_request"])
@@ -837,6 +838,7 @@ class SkillRouterV2Tests(unittest.TestCase):
             self.assertIn("final_plan", payload)
             self.assertNotIn("reflection_trace", payload["final_plan"])
             self.assertTrue(payload["final_plan"]["presentation_contract"]["must_show_to_user_before_execution"])
+            self.assertFalse(payload["final_plan"]["execution_ready"])
 
 
 if __name__ == "__main__":

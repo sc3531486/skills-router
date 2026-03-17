@@ -240,12 +240,19 @@ In explicit mode, `final_plan` now includes:
 
 - `presentation_contract`
 - `execution_gate`
+- `host_handoff_instructions`
 
 Those fields are meant to reduce common host mistakes, especially:
 
 - jumping straight into `brainstorming`, `drawio`, or another downstream skill
 - treating routing as invisible internal plumbing
 - asking optional browser or visualization prompts before the user has even seen the chosen orchestration plan
+
+Important:
+
+- in explicit mode, a valid route is not the same as "execute immediately"
+- `execution_ready` should stay `false` until the route has been shown and the user has confirmed to continue
+- the intended behavior is "show route and stop", not "show route and immediately start step 1"
 
 ## Why It Exists
 

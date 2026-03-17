@@ -63,6 +63,7 @@ For explicit invocations, treat the route presentation as a pause point:
 
 - show `user_summary` and `final_plan`
 - wait for the user to confirm or continue
+- end the current reply after showing the route
 - do not ask optional browser, canvas, or visualization prompts before the route is visible
 - do not start a downstream skill workflow in the same breath as if routing were invisible plumbing
 
@@ -173,6 +174,7 @@ Default output is concise at the top level:
 
 - `presentation_contract`
 - `execution_gate`
+- `host_handoff_instructions`
 
 Use those fields as hard guidance for explicit invocations.
 
@@ -188,6 +190,8 @@ The reasoning payload now also includes stage-one selection details and pruned d
 - Use `final_plan` as the user-visible orchestration result when the caller wants to show the validated route itself.
 - In explicit mode, always show `final_plan` before proceeding into downstream execution.
 - In explicit mode, respect `final_plan.presentation_contract` and `final_plan.execution_gate` as a hard pause before execution.
+- In explicit mode, treat `execution_ready = false` as intentional even when the route is valid; the missing piece is user confirmation, not route quality.
+- In explicit mode, after showing the route, stop the current turn instead of auto-entering `brainstorming`, `drawio`, or any other first step.
 - Do not ask "want to open a browser" or similar optional host UX questions until after the route has already been shown and the next step actually needs that capability.
 - Do not dump the full model reasoning unless the user asks.
 - Keep the user's language throughout the route summary.

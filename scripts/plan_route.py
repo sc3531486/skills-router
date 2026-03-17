@@ -29,10 +29,10 @@ def build_user_summary(task_text, validation_result, routing_decision, mode):
     ordered = " -> ".join(step["executor_id"].split(":", 2)[-1] for step in steps)
     if use_chinese:
         if mode == "explicit":
-            return f"计划：建议按 {ordered} 的顺序协作。当前先向用户展示这份编排结果，再决定是否继续执行下游步骤。"
+            return f"计划：建议按 {ordered} 的顺序协作。当前只展示编排结果，不进入第一步执行；等用户确认后再继续。"
         return f"计划：按顺序调用 {ordered}。当前路线已通过校验，可先直接执行；如需更强能力，再看可选推荐。"
     if mode == "explicit":
-        return f"Plan: use {ordered} in order. Show this orchestration result to the user first, then decide whether to continue into downstream execution."
+        return f"Plan: use {ordered} in order. For now, only show this orchestration result and do not start step one until the user confirms."
     return f"Plan: execute {ordered} in order. The route passed validation, and optional recommendations remain available as upgrades."
 
 
@@ -70,8 +70,9 @@ def build_final_plan(task_info, validation_result, routing_decision, required_re
         }
         for index, step in enumerate(chosen_plan.get("steps", []))
     ]
-    execution_ready = bool(validation_result["is_valid"] and not required_recommendations)
+    route_valid = bool(validation_result["is_valid"] and not required_recommendations)
     must_pause_for_user = mode == "explicit"
+    execution_ready = bool(route_valid and not must_pause_for_user)
     return {
         "task": task_info["task"],
         "task_understanding": routing_decision.get("task_understanding"),
@@ -84,7 +85,9 @@ def build_final_plan(task_info, validation_result, routing_decision, required_re
             "errors": validation_result["errors"],
             "warnings": validation_result["warnings"],
         },
+        "route_valid": route_valid,
         "execution_ready": execution_ready,
+        "ready_after_user_confirmation": bool(route_valid and must_pause_for_user),
         "presentation_contract": {
             "must_show_to_user_before_execution": must_pause_for_user,
             "must_show_fields": [
@@ -98,15 +101,22 @@ def build_final_plan(task_info, validation_result, routing_decision, required_re
                 "invoke downstream skills or MCP steps",
                 "open browser or visual-assist prompts unrelated to the chosen plan",
                 "ask optional execution questions before the route itself is visible",
+                "start brainstorming or any other first-step workflow in the same reply",
             ] if must_pause_for_user else [],
         },
         "execution_gate": {
             "mode": mode,
             "requires_user_confirmation": must_pause_for_user,
-            "next_action": "show_plan_and_wait_for_confirmation" if must_pause_for_user else (
+            "next_action": "show_plan_and_stop" if must_pause_for_user else (
                 "continue_execution" if execution_ready else "stop_for_required_capability_gap"
             ),
+            "host_must_end_turn": must_pause_for_user,
         },
+        "host_handoff_instructions": (
+            "Explicit router invocation: show this plan to the user and end the turn. Do not invoke the first downstream step yet."
+            if not prefers_chinese(task_info["task"]) else
+            "显式调用 Skill Router：先把这份计划展示给用户，然后结束当前回复。不要在这一条消息里直接进入第一个下游 skill。"
+        ),
         "missing_required_capabilities": routing_decision.get("missing_required_capabilities", []),
         "missing_optional_capabilities": routing_decision.get("missing_optional_capabilities", []),
         "recommended_install_required": required_recommendations,
