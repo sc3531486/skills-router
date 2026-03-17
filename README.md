@@ -24,12 +24,14 @@ The intended flow is:
    - visible `mcp_resource`
 2. Build a minimal task seed
    - the program only extracts lightweight hints such as likely deliverable and constraints
+   - stage one may compress the candidate pool, but its limit is a soft target so the model still sees cross-type options when they matter
 3. Let the model reflect
    - correct the task understanding
    - decide which capabilities are required
    - compare candidate plans
    - choose the best route
 4. Validate the route with hard policy rules
+   - including step-order validation when a later step is the one that would produce required context
 5. Return the validated plan to the host model
 6. Let the host model execute the plan
 

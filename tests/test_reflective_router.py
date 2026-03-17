@@ -304,6 +304,77 @@ class SkillRouterV2Tests(unittest.TestCase):
         self.assertEqual(meta["selected_count"], 3)
         self.assertGreaterEqual(meta["counts_by_type"]["skill"], 2)
 
+    def test_stage_one_selector_allows_small_overflow_to_preserve_cross_type_candidates(self):
+        task_info = infer_task("做一个中文 Kubernetes 培训总览图，要讲清楚关系")
+        executors = [
+            {
+                "executor_id": "skill:codex:drawio",
+                "executor_type": "skill",
+                "name": "drawio",
+                "source": "local-skill",
+                "tool_family": "codex",
+                "capabilities": ["diagram"],
+                "deliverable_capabilities": ["diagram"],
+                "support_capabilities": [],
+                "keywords": ["diagram", "drawio", "overview"],
+                "description": "Diagram authoring skill",
+                "constraints": {"process_only": False},
+            },
+            {
+                "executor_id": "skill:codex:canvas-design",
+                "executor_type": "skill",
+                "name": "canvas-design",
+                "source": "local-skill",
+                "tool_family": "codex",
+                "capabilities": ["information-design", "visual-design"],
+                "deliverable_capabilities": [],
+                "support_capabilities": ["information-design", "visual-design"],
+                "keywords": ["storytelling", "clarity", "training"],
+                "description": "Information design support",
+                "constraints": {"process_only": False},
+            },
+            {
+                "executor_id": "mcp_resource:figma:k8s-refs",
+                "executor_type": "mcp_resource",
+                "name": "k8s-refs",
+                "source": "mcp-session",
+                "tool_family": "figma",
+                "capabilities": ["research", "diagram"],
+                "deliverable_capabilities": [],
+                "support_capabilities": ["research"],
+                "keywords": ["kubernetes", "reference", "training"],
+                "description": "Kubernetes reference context",
+                "constraints": {"context_only": True, "read_only": True},
+            },
+        ]
+        config = {
+            "reasoning": {
+                "stage_one": {
+                    "enabled": True,
+                    "candidate_limit": 2,
+                    "keep_all_under": 1,
+                    "artifact_skill_limit": 1,
+                    "support_skill_limit": 1,
+                    "mcp_limit": 1,
+                    "diversity_overflow_limit": 2,
+                }
+            }
+        }
+
+        selected, meta = prepare_reasoning_executors(task_info, executors, config)
+        selected_ids = {item["executor_id"] for item in selected}
+        selected_details = {item["executor_id"]: item for item in meta["selected_details"]}
+
+        self.assertIn("skill:codex:drawio", selected_ids)
+        self.assertIn("skill:codex:canvas-design", selected_ids)
+        self.assertIn("mcp_resource:figma:k8s-refs", selected_ids)
+        self.assertGreater(meta["selected_count"], config["reasoning"]["stage_one"]["candidate_limit"])
+        self.assertEqual(meta["overflow_count"], 1)
+        self.assertEqual(selected_details["skill:codex:drawio"]["selected_because"], "must-keep")
+        self.assertEqual(selected_details["skill:codex:canvas-design"]["selected_because"], "support-slot")
+        self.assertEqual(selected_details["mcp_resource:figma:k8s-refs"]["selected_because"], "mcp-slot")
+        self.assertTrue(meta["pruned_details"] == [])
+
     def test_discover_skill_roots_finds_parallel_codex_collections(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             tool_home = Path(temp_dir) / ".codex"
@@ -507,6 +578,58 @@ class SkillRouterV2Tests(unittest.TestCase):
 
         self.assertFalse(result["is_valid"])
         self.assertTrue(any("Mutating MCP tool" in message for message in result["errors"]))
+
+    def test_policy_validator_rejects_step_that_requires_future_context(self):
+        task_info = infer_task("读取一个 MCP 资源后生成总结文档")
+        executors = [
+            {
+                "executor_id": "skill:codex:doc",
+                "executor_type": "skill",
+                "name": "doc",
+                "constraints": {"process_only": False, "context_only": False},
+            },
+            {
+                "executor_id": "mcp_resource:figma:intro",
+                "executor_type": "mcp_resource",
+                "name": "intro",
+                "constraints": {"context_only": True, "read_only": True},
+            },
+        ]
+        decision = {
+            "chosen_plan_id": "bad-order",
+            "candidate_plans": [
+                {
+                    "plan_id": "bad-order",
+                    "summary": "",
+                    "steps": [
+                        {
+                            "step_type": "skill",
+                            "executor_id": "skill:codex:doc",
+                            "required_inputs": ["reference content"],
+                            "expected_output": "Editable summary document",
+                            "reads_context_only": False,
+                            "may_mutate": False,
+                        },
+                        {
+                            "step_type": "mcp_resource",
+                            "executor_id": "mcp_resource:figma:intro",
+                            "required_inputs": [],
+                            "expected_output": "Reference content",
+                            "reads_context_only": True,
+                            "may_mutate": False,
+                        },
+                    ],
+                    "pros": [],
+                    "cons": [],
+                }
+            ],
+            "missing_required_capabilities": [],
+        }
+
+        result = validate_route(task_info, decision, executors, {})
+
+        self.assertFalse(result["is_valid"])
+        self.assertTrue(any("before it is produced" in message for message in result["errors"]))
 
     def test_plan_route_outputs_v2_shape_with_mock_model(self):
         with tempfile.TemporaryDirectory() as temp_dir:

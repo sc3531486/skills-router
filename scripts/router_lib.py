@@ -594,6 +594,33 @@ def score_executor_for_stage_one(task_info, executor):
     return score, reasons
 
 
+def classify_stage_one_bucket(task_info, executor):
+    executor_type = executor.get("executor_type")
+    if executor_type in {"mcp_tool", "mcp_resource"}:
+        return "mcp"
+
+    constraints = executor.get("constraints", {})
+    if constraints.get("process_only"):
+        return "process_skill"
+
+    required = set(task_info.get("required_capabilities", []))
+    optional = set(task_info.get("optional_support_capabilities", []))
+    task_profile = task_info.get("task_profile", {})
+    deliverable_caps = set(executor.get("deliverable_capabilities", []))
+    support_caps = set(executor.get("support_capabilities", []))
+    capabilities = set(executor.get("capabilities", []))
+
+    if required & (capabilities | deliverable_caps):
+        return "artifact_skill"
+    if optional & (capabilities | support_caps):
+        return "support_skill"
+    if task_profile.get("deliverable") and task_profile["deliverable"] in deliverable_caps:
+        return "artifact_skill"
+    if support_caps:
+        return "support_skill"
+    return "fallback"
+
+
 def prepare_reasoning_executors(task_info, executors, config):
     reasoning_config = (config or {}).get("reasoning", {})
     stage_one = dict(reasoning_config.get("stage_one", {}))
@@ -604,8 +631,11 @@ def prepare_reasoning_executors(task_info, executors, config):
             "total_count": len(executors),
             "selected_count": len(selected),
             "pruned_count": 0,
+            "overflow_count": 0,
             "selected_executor_ids": [item["executor_id"] for item in selected],
             "counts_by_type": {},
+            "selected_details": [],
+            "pruned_details": [],
         }
         return selected, meta
 
@@ -614,6 +644,7 @@ def prepare_reasoning_executors(task_info, executors, config):
     artifact_skill_limit = int(stage_one.get("artifact_skill_limit", max(1, candidate_limit // 2 or 1)))
     support_skill_limit = int(stage_one.get("support_skill_limit", max(1, candidate_limit // 4 or 1)))
     mcp_limit = int(stage_one.get("mcp_limit", max(1, candidate_limit // 4 or 1)))
+    diversity_overflow_limit = int(stage_one.get("diversity_overflow_limit", 1))
     if len(executors) <= keep_all_under and len(executors) <= candidate_limit:
         selected = list(executors)
         meta = {
@@ -621,84 +652,156 @@ def prepare_reasoning_executors(task_info, executors, config):
             "total_count": len(executors),
             "selected_count": len(selected),
             "pruned_count": 0,
+            "overflow_count": 0,
             "selected_executor_ids": [item["executor_id"] for item in selected],
             "counts_by_type": build_counts_by_type(selected),
+            "selected_details": [],
+            "pruned_details": [],
         }
         return selected, meta
 
-    scored = []
-    must_keep = []
+    scored_entries = []
     for executor in executors:
         score, reasons = score_executor_for_stage_one(task_info, executor)
-        scored.append((score, executor["executor_id"], reasons, executor))
-        if set(executor.get("capabilities", [])) & set(task_info.get("required_capabilities", [])):
-            must_keep.append(executor)
-
-    scored.sort(
+        bucket = classify_stage_one_bucket(task_info, executor)
+        scored_entries.append(
+            {
+                "score": score,
+                "executor_id": executor["executor_id"],
+                "reasons": reasons,
+                "executor": executor,
+                "bucket": bucket,
+                "must_keep": (
+                    (
+                        executor.get("executor_type") == "skill"
+                        and not executor.get("constraints", {}).get("process_only")
+                        and bool(
+                            set(executor.get("deliverable_capabilities", []))
+                            & set(task_info.get("required_capabilities", []))
+                        )
+                    )
+                    or "explicit-name" in reasons
+                ),
+            }
+        )
+    scored_entries.sort(
         key=lambda item: (
-            -item[0],
-            item[3].get("executor_type") != "skill",
-            item[3].get("source") != "local-skill",
-            item[1],
+            -item["score"],
+            item["executor"].get("executor_type") != "skill",
+            item["executor"].get("source") != "local-skill",
+            item["executor_id"],
         )
     )
 
     selected = []
     seen = set()
+    selected_details = []
 
-    def add_executor(executor):
+    def add_entry(entry, selected_because, allow_overflow=False):
+        executor = entry["executor"]
         if executor["executor_id"] in seen:
             return False
-        if len(selected) >= candidate_limit:
+        limit = candidate_limit + diversity_overflow_limit if allow_overflow else candidate_limit
+        if len(selected) >= limit:
             return False
         seen.add(executor["executor_id"])
         selected.append(executor)
+        selected_details.append(
+            {
+                "executor_id": executor["executor_id"],
+                "bucket": entry["bucket"],
+                "stage_one_score": entry["score"],
+                "stage_one_reasons": list(entry["reasons"]),
+                "selected_because": selected_because,
+            }
+        )
         return True
 
-    for executor in must_keep:
-        add_executor(executor)
+    for entry in scored_entries:
+        if entry["must_keep"]:
+            add_entry(entry, "must-keep")
 
     artifact_candidates = []
     support_candidates = []
     mcp_candidates = []
     fallback_candidates = []
 
-    for score, _, _, executor in scored:
+    for entry in scored_entries:
+        executor = entry["executor"]
         if executor["executor_id"] in seen:
-            continue
-        if score <= 0 and selected:
             continue
         executor_type = executor.get("executor_type")
         if executor_type in {"mcp_tool", "mcp_resource"}:
-            mcp_candidates.append(executor)
+            mcp_candidates.append(entry)
             continue
         if set(executor.get("deliverable_capabilities", [])) & set(task_info.get("required_capabilities", [])):
-            artifact_candidates.append(executor)
+            artifact_candidates.append(entry)
             continue
         if set(executor.get("support_capabilities", [])) & set(task_info.get("optional_support_capabilities", [])):
-            support_candidates.append(executor)
+            support_candidates.append(entry)
             continue
-        fallback_candidates.append(executor)
+        if entry["bucket"] == "artifact_skill":
+            artifact_candidates.append(entry)
+            continue
+        if entry["bucket"] == "support_skill":
+            support_candidates.append(entry)
+            continue
+        fallback_candidates.append(entry)
 
-    for executor in artifact_candidates[:artifact_skill_limit]:
-        add_executor(executor)
-    for executor in support_candidates[:support_skill_limit]:
-        add_executor(executor)
-    for executor in mcp_candidates[:mcp_limit]:
-        add_executor(executor)
-    for executor in fallback_candidates:
-        add_executor(executor)
+    for entry in artifact_candidates[:artifact_skill_limit]:
+        add_entry(entry, "artifact-slot")
+    for entry in support_candidates[:support_skill_limit]:
+        add_entry(entry, "support-slot", allow_overflow=len(selected) >= candidate_limit)
+    for entry in mcp_candidates[:mcp_limit]:
+        add_entry(entry, "mcp-slot", allow_overflow=len(selected) >= candidate_limit)
+    for entry in fallback_candidates:
+        if entry["score"] <= 0 and selected:
+            continue
+        add_entry(entry, "fallback-rank")
 
     if not selected:
-        selected = [item[3] for item in scored[:candidate_limit]]
+        fallback_seed = scored_entries[:candidate_limit]
+        selected = [item["executor"] for item in fallback_seed]
+        selected_details = [
+            {
+                "executor_id": item["executor_id"],
+                "bucket": item["bucket"],
+                "stage_one_score": item["score"],
+                "stage_one_reasons": list(item["reasons"]),
+                "selected_because": "fallback-seed",
+            }
+            for item in fallback_seed
+        ]
+        seen = {item["executor_id"] for item in fallback_seed}
+
+    pruned_details = []
+    for entry in scored_entries:
+        if entry["executor_id"] in seen:
+            continue
+        pruned_because = "candidate-limit"
+        if entry["score"] <= 0 and selected:
+            pruned_because = "low-score"
+        pruned_details.append(
+            {
+                "executor_id": entry["executor_id"],
+                "bucket": entry["bucket"],
+                "stage_one_score": entry["score"],
+                "stage_one_reasons": list(entry["reasons"]),
+                "pruned_because": pruned_because,
+            }
+        )
 
     meta = {
         "enabled": True,
         "total_count": len(executors),
         "selected_count": len(selected),
         "pruned_count": max(0, len(executors) - len(selected)),
+        "overflow_count": max(0, len(selected) - candidate_limit),
+        "target_candidate_limit": candidate_limit,
         "selected_executor_ids": [item["executor_id"] for item in selected],
         "counts_by_type": build_counts_by_type(selected),
+        "selected_details": selected_details,
+        "pruned_details": pruned_details,
     }
     return selected, meta
 

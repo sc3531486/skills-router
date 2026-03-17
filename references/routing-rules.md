@@ -34,6 +34,7 @@ The program's task inference is only a seed. The model is allowed to correct it 
 
 Stage one is allowed to be heuristic because it is not the final chooser.
 Its only job is to lower token cost and reduce noise before the reflective model call.
+Its candidate limit should be treated as a soft target, not an excuse to over-prune the model's option space.
 
 Stage one may:
 
@@ -46,11 +47,14 @@ Stage one may:
   - primary artifact executors
   - optional support executors
   - relevant MCP tools/resources
+- use a small diversity overflow when necessary to keep cross-type options visible to the model
+- record why candidates were selected or pruned for debugging
 
 Stage one must not:
 
 - claim that a route is chosen
 - hide all candidates for a required capability
+- let a narrow heuristic guess erase all meaningful support or MCP alternatives
 - replace the model's final decision with script scoring
 
 ## Experimental runner v1
@@ -131,9 +135,10 @@ The validator must reject plans that violate hard policy:
 - `mcp_resource` is not marked `reads_context_only = true`
 - `mcp_resource` is marked as mutating
 - mutating `mcp_tool` is selected while policy forbids it
+- a step requires context that is only produced by a later step
 - `missing_required_capabilities` is non-empty
 
-Warnings are allowed for softer issues such as reading MCP resources after an executable step.
+Warnings are allowed for softer issues such as reading MCP resources after an executable step when no explicit dependency break is detected.
 
 ## Reflection trace
 

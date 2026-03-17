@@ -15,6 +15,7 @@ description: Use when the user explicitly asks to use an automatic dispatch or r
 It does not decide the route by hardcoded local scoring.
 Instead, it discovers available executors, asks the host model to propose candidate plans, validates the chosen plan against hard rules, and only then turns the result into an execution-ready route.
 Before the host model sees the inventory, the router runs a lightweight stage-one narrowing pass to keep token usage under control. That pass compresses executor summaries and removes obviously irrelevant candidates, but it does not make the final route decision.
+Its candidate limit is a soft target rather than an absolute hard wall: the router may keep a small extra set of cross-type candidates so the model still sees artifact, support, and MCP options together.
 
 Its primary responsibility is orchestration planning, not runtime execution.
 The normal path is:
@@ -67,6 +68,7 @@ It then runs a stage-one candidate selector:
 - compress long descriptions and keyword lists
 - prune obviously unrelated executors for the current task type
 - preserve a balanced candidate mix across artifact skills, support skills, and relevant MCP executors
+- allow a small diversity overflow when needed so stage one does not over-constrain the model
 - pass only the narrowed candidate set into the final reflective routing prompt
 
 ### 3. Ask the model to plan
@@ -108,6 +110,7 @@ It validates the chosen plan against hard rules, including:
 
 The router also treats the program-generated task profile as a seed, not ground truth.
 Final validation and user-facing output use the model-corrected `task_profile`, `required_capabilities`, and `optional_support_capabilities`.
+Validation also checks step ordering when a route claims that one step depends on context produced by another step later in the plan.
 
 ### 5. Hand off or stop
 
@@ -137,6 +140,7 @@ Default output is concise at the top level:
 Internal reasoning payloads are not shown by default.
 Only use `--include-reasoning-input` when debugging router behavior.
 Only use `--include-reflection-trace` when you need to inspect why the model introduced a capability, skill, or MCP step.
+The reasoning payload now also includes stage-one selection details and pruned details so you can inspect why a candidate was kept, overflowed in, or removed.
 
 ## User-Facing Behavior
 
