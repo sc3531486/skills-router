@@ -19,34 +19,79 @@ In short:
 This repository is a single skill repository.
 Install it by placing the whole repository folder under your Codex skills directory as `skill-router`.
 
-### Codex on Windows
+### Prerequisites
 
-If your Codex home is the default one, install it to:
+- You have Codex installed.
+- You can access your Codex home directory.
+- Your custom skills live under `$CODEX_HOME/skills`.
+
+Default Codex home:
+
+- Windows: `C:\Users\<your-user>\.codex`
+- macOS / Linux: `~/.codex`
+
+### Option 1: Install with Git
+
+#### Windows
+
+1. Open PowerShell.
+2. Make sure the skills directory exists:
 
 ```powershell
-C:\Users\<your-user>\.codex\skills\skill-router
+New-Item -ItemType Directory -Force "$HOME\.codex\skills" | Out-Null
 ```
 
-Example:
+3. If you already have an older `skill-router`, back it up first:
+
+```powershell
+if (Test-Path "$HOME\.codex\skills\skill-router") {
+  Rename-Item "$HOME\.codex\skills\skill-router" "skill-router.bak"
+}
+```
+
+4. Clone the repository:
 
 ```powershell
 git clone https://github.com/sc3531486/skills-router.git "$HOME\.codex\skills\skill-router"
 ```
 
-### Codex on macOS / Linux
+#### macOS / Linux
+
+1. Open Terminal.
+2. Make sure the skills directory exists:
+
+```bash
+mkdir -p "$HOME/.codex/skills"
+```
+
+3. If you already have an older `skill-router`, back it up first:
+
+```bash
+if [ -d "$HOME/.codex/skills/skill-router" ]; then
+  mv "$HOME/.codex/skills/skill-router" "$HOME/.codex/skills/skill-router.bak"
+fi
+```
+
+4. Clone the repository:
 
 ```bash
 git clone https://github.com/sc3531486/skills-router.git "$HOME/.codex/skills/skill-router"
 ```
 
-### Manual install
+### Option 2: Manual install from ZIP
 
-If you do not want to use `git`, download the repository zip and extract it to:
+If you do not want to use `git`:
 
-- Windows: `C:\Users\<your-user>\.codex\skills\skill-router`
-- macOS / Linux: `~/.codex/skills/skill-router`
+1. Download this repository as a ZIP.
+2. Extract it.
+3. Rename the extracted folder to `skill-router` if needed.
+4. Move it into your Codex skills directory:
+   - Windows: `C:\Users\<your-user>\.codex\skills\skill-router`
+   - macOS / Linux: `~/.codex/skills/skill-router`
 
-Make sure the final layout looks like this:
+### Verify the final layout
+
+The final folder should look like this:
 
 ```text
 skill-router/
@@ -58,15 +103,65 @@ skill-router/
   tests/
 ```
 
-### After install
+Important:
 
-Restart Codex so it reloads installed skills.
+- `SKILL.md` must be directly inside the `skill-router` folder
+- do not end up with a nested path like `skill-router/skills-router/SKILL.md`
 
-Then invoke it explicitly, for example:
+### Reload Codex
+
+After installation:
+
+1. Fully restart Codex.
+2. Start a new session.
+3. Explicitly invoke the skill, for example:
 
 ```text
 Use skill-router to decide which skills and MCP capabilities should handle this task.
 ```
+
+### Quick verification
+
+If installation is correct, Codex should be able to discover the skill and read its `SKILL.md`.
+
+You can test with prompts like:
+
+```text
+Use skill-router to plan how to complete this task with the best mix of local skills and MCP.
+```
+
+```text
+Use skill-router and tell me which skills or MCP capabilities you would involve before executing anything.
+```
+
+### Update to the latest version
+
+If you installed with Git:
+
+#### Windows
+
+```powershell
+git -C "$HOME\.codex\skills\skill-router" pull
+```
+
+#### macOS / Linux
+
+```bash
+git -C "$HOME/.codex/skills/skill-router" pull
+```
+
+Then restart Codex.
+
+If you installed manually from ZIP, replace the folder contents with the latest release of this repository and restart Codex.
+
+### Uninstall
+
+Delete the installed folder:
+
+- Windows: `C:\Users\<your-user>\.codex\skills\skill-router`
+- macOS / Linux: `~/.codex/skills/skill-router`
+
+Then restart Codex.
 
 ## Core Logic
 
