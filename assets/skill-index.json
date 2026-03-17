@@ -1,0 +1,182 @@
+[
+  {
+    "name": "doc",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/doc",
+    "capabilities": ["document", "docx", "writing"],
+    "keywords": ["doc", "docx", "word", "report", "memo", "materials"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "slides",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/slides",
+    "capabilities": ["presentation", "slides", "ppt"],
+    "keywords": ["slides", "ppt", "pptx", "deck", "presentation", "powerpoint"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "pdf",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/pdf",
+    "capabilities": ["pdf", "document", "extraction"],
+    "keywords": ["pdf", "extract", "annotate", "merge", "read pdf"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "spreadsheet",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/spreadsheet",
+    "capabilities": ["spreadsheet", "xlsx", "csv", "table"],
+    "keywords": ["excel", "xlsx", "csv", "spreadsheet", "table"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "playwright",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/playwright",
+    "capabilities": ["browser", "automation", "web"],
+    "keywords": ["browser", "web", "automation", "form", "scrape", "ui"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "screenshot",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/screenshot",
+    "capabilities": ["image", "capture", "visual"],
+    "keywords": ["screenshot", "capture", "screen", "visual"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "jupyter-notebook",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/jupyter-notebook",
+    "capabilities": ["analysis", "notebook", "data"],
+    "keywords": ["jupyter", "notebook", "analysis", "experiment", "data"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "openai-docs",
+    "source": "openai-curated",
+    "repo": "openai/skills",
+    "path": "skills/.curated/openai-docs",
+    "capabilities": ["documentation", "openai", "api"],
+    "keywords": ["openai", "api", "models", "gpt", "docs"],
+    "install_hint": "Install from OpenAI curated skills"
+  },
+  {
+    "name": "document-skills",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "document-skills",
+    "capabilities": ["document", "pdf", "presentation", "spreadsheet"],
+    "keywords": ["documents", "pdf", "pptx", "xlsx", "docx"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "content-research-writer",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "content-research-writer",
+    "capabilities": ["research", "information-design", "writing", "documentation"],
+    "keywords": ["research", "writer", "brief", "materials", "content"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "canvas-design",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "canvas-design",
+    "capabilities": ["information-design", "visual-design"],
+    "keywords": ["canvas", "design", "visual", "layout", "diagram", "storytelling"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "brand-guidelines",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "brand-guidelines",
+    "capabilities": ["visual-design"],
+    "keywords": ["brand", "design", "visual", "layout", "presentation"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "file-organizer",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "file-organizer",
+    "capabilities": ["productivity", "files", "organization"],
+    "keywords": ["files", "organize", "cleanup", "folders"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "meeting-insights-analyzer",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "meeting-insights-analyzer",
+    "capabilities": ["analysis", "meetings", "documentation"],
+    "keywords": ["meeting", "notes", "insights", "summary"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "webapp-testing",
+    "source": "github-index",
+    "repo": "ComposioHQ/awesome-claude-skills",
+    "path": "webapp-testing",
+    "capabilities": ["browser", "testing", "automation"],
+    "keywords": ["webapp", "testing", "browser", "ui"],
+    "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
+  },
+  {
+    "name": "orchestration",
+    "source": "github-index",
+    "repo": "numman-ali/n-skills",
+    "path": "skills/workflow/orchestration",
+    "capabilities": ["workflow", "orchestration", "automation"],
+    "keywords": ["orchestration", "multi-agent", "routing", "workflow"],
+    "install_hint": "Install from the n-skills repo"
+  },
+  {
+    "name": "open-source-maintainer",
+    "source": "github-index",
+    "repo": "numman-ali/n-skills",
+    "path": "skills/workflow/open-source-maintainer",
+    "capabilities": ["github", "maintenance", "workflow"],
+    "keywords": ["open source", "maintainer", "issues", "prs", "github"],
+    "install_hint": "Install from the n-skills repo"
+  },
+  {
+    "name": "dev-browser",
+    "source": "github-index",
+    "repo": "numman-ali/n-skills",
+    "path": "skills/automation/dev-browser",
+    "capabilities": ["browser", "automation", "web"],
+    "keywords": ["browser", "automation", "dev browser", "web"],
+    "install_hint": "Install from the n-skills repo"
+  },
+  {
+    "name": "gastown",
+    "source": "github-index",
+    "repo": "numman-ali/n-skills",
+    "path": "skills/tools/gastown",
+    "capabilities": ["workflow", "automation", "tools"],
+    "keywords": ["gastown", "orchestrator", "tools"],
+    "install_hint": "Install from the n-skills repo"
+  },
+  {
+    "name": "zai-cli",
+    "source": "github-index",
+    "repo": "numman-ali/n-skills",
+    "path": "skills/tools/zai-cli",
+    "capabilities": ["tools", "research", "github"],
+    "keywords": ["zai", "cli", "reader", "vision", "github exploration"],
+    "install_hint": "Install from the n-skills repo"
+  }
+]

@@ -1,0 +1,62 @@
+{
+  "mode": "explicit",
+  "allow_install_recommendations": true,
+  "allow_auto_install": false,
+  "preferred_sources": [
+    "local-skill",
+    "mcp-session",
+    "mcp-manifest",
+    "openai-curated",
+    "github-index"
+  ],
+  "preserve_user_language": true,
+  "remote_fetch_timeout_seconds": 8,
+  "reasoning": {
+    "provider_mode": "host",
+    "host_tool_family": "codex",
+    "response_timeout_seconds": 45,
+    "stage_one": {
+      "enabled": true,
+      "candidate_limit": 12,
+      "keep_all_under": 10,
+      "artifact_skill_limit": 6,
+      "support_skill_limit": 3,
+      "mcp_limit": 3,
+      "description_max_chars": 140,
+      "keywords_limit": 8,
+      "capabilities_limit": 8
+    }
+  },
+  "policy_constraints": {
+    "allow_mutating_mcp_tools": false,
+    "block_process_only_in_bounded_artifact_routes": true,
+    "block_mcp_resource_as_final_executor": true
+  },
+  "discovery": {
+    "tool_families": [
+      "codex",
+      "claude",
+      "cursor",
+      "kiro",
+      "agents"
+    ],
+    "enable_session_mcp_provider": true,
+    "enable_manifest_mcp_provider": true
+  },
+  "default_github_indexes": [
+    {
+      "name": "awesome-claude-skills",
+      "source": "github-index",
+      "repo": "ComposioHQ/awesome-claude-skills",
+      "url": "https://github.com/ComposioHQ/awesome-claude-skills",
+      "ref": "master"
+    },
+    {
+      "name": "n-skills",
+      "source": "github-index",
+      "repo": "numman-ali/n-skills",
+      "url": "https://github.com/numman-ali/n-skills",
+      "ref": "main"
+    }
+  ]
+}

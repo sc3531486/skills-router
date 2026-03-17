@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Router"
+  short_description: "Reflectively orchestrate local skills and MCP capabilities before execution"
+  default_prompt: "Use the router to discover installed skills and MCP capabilities, choose the best validated route, and recommend missing capabilities before any installation."
