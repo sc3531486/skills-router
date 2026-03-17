@@ -14,7 +14,7 @@
   "reasoning": {
     "provider_mode": "host",
     "host_tool_family": "codex",
-    "response_timeout_seconds": 45,
+    "response_timeout_seconds": 320,
     "stage_one": {
       "enabled": true,
       "candidate_limit": 12,

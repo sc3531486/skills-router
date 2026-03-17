@@ -225,6 +225,28 @@ The intended flow is:
 
 That means `skill-router` is a planner-orchestrator, not the main executor.
 
+## Explicit Mode UX Contract
+
+When a user explicitly says to use `skill-router`, the route itself becomes part of the answer.
+
+Expected order:
+
+1. run `plan_route.py`
+2. show `user_summary`
+3. show `final_plan`
+4. only then decide whether to continue with downstream execution
+
+In explicit mode, `final_plan` now includes:
+
+- `presentation_contract`
+- `execution_gate`
+
+Those fields are meant to reduce common host mistakes, especially:
+
+- jumping straight into `brainstorming`, `drawio`, or another downstream skill
+- treating routing as invisible internal plumbing
+- asking optional browser or visualization prompts before the user has even seen the chosen orchestration plan
+
 ## Why It Exists
 
 Traditional routing usually looks like:

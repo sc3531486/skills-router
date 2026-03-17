@@ -123,6 +123,8 @@ Support capabilities should stay generic and reusable:
 - Process skills may appear only in a real process-guided route, not as casual support add-ons.
 - If a task can be completed by one strong executor, the chosen plan should stay simple.
 - If quality goals such as clarity, visual polish, or accuracy materially change the best route, that should show up as additional support capabilities or MCP context steps.
+- In explicit router mode, the chosen plan must be shown to the user before any downstream skill flow begins.
+- Optional host UX prompts such as browser or visualization helpers must not appear before the route itself is visible.
 
 ## Validation rules
 

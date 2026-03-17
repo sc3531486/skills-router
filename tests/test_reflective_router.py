@@ -725,10 +725,19 @@ class SkillRouterV2Tests(unittest.TestCase):
             self.assertIn("discovered_executors", payload)
             self.assertIn("routing_decision", payload)
             self.assertIn("validation_result", payload)
+            self.assertIn("final_plan", payload)
             self.assertIn("reasoning_input", payload)
             self.assertTrue(payload["validation_result"]["is_valid"])
             self.assertEqual(payload["routing_decision"]["chosen_plan"]["plan_id"], "direct-doc")
+            self.assertEqual(payload["final_plan"]["chosen_plan_id"], "direct-doc")
+            self.assertEqual(payload["final_plan"]["ordered_steps"][0]["executor_id"], "skill:agents:doc-writer")
+            self.assertTrue(payload["final_plan"]["validation"]["is_valid"])
+            self.assertTrue(payload["final_plan"]["execution_ready"])
+            self.assertTrue(payload["final_plan"]["presentation_contract"]["must_show_to_user_before_execution"])
+            self.assertTrue(payload["final_plan"]["execution_gate"]["requires_user_confirmation"])
+            self.assertEqual(payload["final_plan"]["execution_gate"]["next_action"], "show_plan_and_wait_for_confirmation")
             self.assertNotIn("The skill already covers the document task.", payload["user_summary"])
+            self.assertIn("先向用户展示", payload["user_summary"])
             self.assertEqual(payload["task_profile"]["actions"], ["summarize"])
             self.assertEqual(payload["task_profile"]["quality_goals"], ["accuracy"])
             self.assertFalse(payload["task_profile"]["bounded_request"])
@@ -825,6 +834,9 @@ class SkillRouterV2Tests(unittest.TestCase):
 
             self.assertIn("reflection_trace", payload["routing_decision"])
             self.assertEqual(payload["routing_decision"]["reflection_trace"][0]["focus"], "executor")
+            self.assertIn("final_plan", payload)
+            self.assertNotIn("reflection_trace", payload["final_plan"])
+            self.assertTrue(payload["final_plan"]["presentation_contract"]["must_show_to_user_before_execution"])
 
 
 if __name__ == "__main__":

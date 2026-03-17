@@ -20,7 +20,7 @@ from router_lib import (
 )
 
 
-def build_user_summary(task_text, validation_result, routing_decision):
+def build_user_summary(task_text, validation_result, routing_decision, mode):
     use_chinese = prefers_chinese(task_text)
     chosen_plan = validation_result.get("chosen_plan") or {}
     steps = chosen_plan.get("steps", [])
@@ -28,7 +28,11 @@ def build_user_summary(task_text, validation_result, routing_decision):
         return "计划：当前没有可直接执行的路线，先返回缺失能力与推荐项。" if use_chinese else "Plan: no executable route is available yet, so return gaps and recommendations first."
     ordered = " -> ".join(step["executor_id"].split(":", 2)[-1] for step in steps)
     if use_chinese:
+        if mode == "explicit":
+            return f"计划：建议按 {ordered} 的顺序协作。当前先向用户展示这份编排结果，再决定是否继续执行下游步骤。"
         return f"计划：按顺序调用 {ordered}。当前路线已通过校验，可先直接执行；如需更强能力，再看可选推荐。"
+    if mode == "explicit":
+        return f"Plan: use {ordered} in order. Show this orchestration result to the user first, then decide whether to continue into downstream execution."
     return f"Plan: execute {ordered} in order. The route passed validation, and optional recommendations remain available as upgrades."
 
 
@@ -49,6 +53,65 @@ def merge_local_metadata(executors, local_index):
         else:
             merged.append(enrich_executor(executor))
     return dedupe_entries(merged, key_fields=("executor_id",))
+
+
+def build_final_plan(task_info, validation_result, routing_decision, required_recommendations, optional_recommendations, mode):
+    chosen_plan = validation_result.get("chosen_plan") or {}
+    ordered_steps = [
+        {
+            "step_index": index + 1,
+            "step_type": step.get("step_type"),
+            "executor_id": step.get("executor_id"),
+            "purpose": step.get("purpose"),
+            "required_inputs": step.get("required_inputs", []),
+            "expected_output": step.get("expected_output"),
+            "reads_context_only": bool(step.get("reads_context_only", False)),
+            "may_mutate": bool(step.get("may_mutate", False)),
+        }
+        for index, step in enumerate(chosen_plan.get("steps", []))
+    ]
+    execution_ready = bool(validation_result["is_valid"] and not required_recommendations)
+    must_pause_for_user = mode == "explicit"
+    return {
+        "task": task_info["task"],
+        "task_understanding": routing_decision.get("task_understanding"),
+        "chosen_plan_id": chosen_plan.get("plan_id"),
+        "summary": chosen_plan.get("summary"),
+        "chosen_plan_reason": routing_decision.get("chosen_plan_reason"),
+        "ordered_steps": ordered_steps,
+        "validation": {
+            "is_valid": validation_result["is_valid"],
+            "errors": validation_result["errors"],
+            "warnings": validation_result["warnings"],
+        },
+        "execution_ready": execution_ready,
+        "presentation_contract": {
+            "must_show_to_user_before_execution": must_pause_for_user,
+            "must_show_fields": [
+                "summary",
+                "ordered_steps",
+                "validation",
+                "recommended_install_required",
+                "recommended_install_optional",
+            ],
+            "must_not_do_before_showing_plan": [
+                "invoke downstream skills or MCP steps",
+                "open browser or visual-assist prompts unrelated to the chosen plan",
+                "ask optional execution questions before the route itself is visible",
+            ] if must_pause_for_user else [],
+        },
+        "execution_gate": {
+            "mode": mode,
+            "requires_user_confirmation": must_pause_for_user,
+            "next_action": "show_plan_and_wait_for_confirmation" if must_pause_for_user else (
+                "continue_execution" if execution_ready else "stop_for_required_capability_gap"
+            ),
+        },
+        "missing_required_capabilities": routing_decision.get("missing_required_capabilities", []),
+        "missing_optional_capabilities": routing_decision.get("missing_optional_capabilities", []),
+        "recommended_install_required": required_recommendations,
+        "recommended_install_optional": optional_recommendations,
+    }
 
 
 def main():
@@ -130,6 +193,14 @@ def main():
     )
 
     chosen_plan = validation_result.get("chosen_plan") or {}
+    final_plan = build_final_plan(
+        task_info=task_info,
+        validation_result=validation_result,
+        routing_decision=routing_decision,
+        required_recommendations=required_recommendations,
+        optional_recommendations=optional_recommendations,
+        mode=config.get("mode", "explicit"),
+    )
     output = {
         "mode": config.get("mode", "explicit"),
         "task": task_info["task"],
@@ -171,7 +242,8 @@ def main():
         },
         "recommended_install_required": required_recommendations,
         "recommended_install_optional": optional_recommendations,
-        "user_summary": build_user_summary(args.task, validation_result, routing_decision),
+        "user_summary": build_user_summary(args.task, validation_result, routing_decision, config.get("mode", "explicit")),
+        "final_plan": final_plan,
         "remote_fetch_errors": remote_fetch_errors,
     }
     if args.include_reflection_trace:
