@@ -14,6 +14,45 @@ In short:
 
 > `skill-router` lets the model think first about which abilities should collaborate, then orchestrates them into a plan.
 
+## Host support status
+
+Current status should be understood in two layers:
+
+### 1. Where this repository is directly installable as a skill
+
+Today, the documented first-class install target is:
+
+- `Codex`
+
+That is why the installation section below is written around the Codex skill directory.
+
+### 2. Which tool ecosystems the router can discover and reason about
+
+The router's discovery layer already supports cross-tool inventory collection for:
+
+- `Codex`
+- `Claude`
+- `Cursor`
+- `Kiro`
+- `Agents`
+
+That means when `skill-router` runs, it can normalize visible skills and MCP declarations from those tool homes into one executor inventory.
+
+Important distinction:
+
+- `supports discovery` does not automatically mean `already packaged as a native installable skill for that host`
+- different AI coding tools have different conventions for loading local skills, agents, plugins, or MCP manifests
+
+So the accurate statement is:
+
+> `skill-router` is already a cross-tool orchestrator at the discovery and planning layer, but its documented first-class installation path is currently Codex.
+
+For `Claude`, `Cursor`, `Kiro`, and `Agents`, support is currently best described as:
+
+- discovery support: yes
+- manifest/provider support: yes, with different maturity levels
+- native host-specific installation guide in this README: not yet fully documented
+
 ## Installation
 
 This repository is a single skill repository.
