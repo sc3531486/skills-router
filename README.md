@@ -14,6 +14,60 @@ In short:
 
 > `skill-router` lets the model think first about which abilities should collaborate, then orchestrates them into a plan.
 
+## Installation
+
+This repository is a single skill repository.
+Install it by placing the whole repository folder under your Codex skills directory as `skill-router`.
+
+### Codex on Windows
+
+If your Codex home is the default one, install it to:
+
+```powershell
+C:\Users\<your-user>\.codex\skills\skill-router
+```
+
+Example:
+
+```powershell
+git clone https://github.com/sc3531486/skills-router.git "$HOME\.codex\skills\skill-router"
+```
+
+### Codex on macOS / Linux
+
+```bash
+git clone https://github.com/sc3531486/skills-router.git "$HOME/.codex/skills/skill-router"
+```
+
+### Manual install
+
+If you do not want to use `git`, download the repository zip and extract it to:
+
+- Windows: `C:\Users\<your-user>\.codex\skills\skill-router`
+- macOS / Linux: `~/.codex/skills/skill-router`
+
+Make sure the final layout looks like this:
+
+```text
+skill-router/
+  SKILL.md
+  README.md
+  assets/
+  references/
+  scripts/
+  tests/
+```
+
+### After install
+
+Restart Codex so it reloads installed skills.
+
+Then invoke it explicitly, for example:
+
+```text
+Use skill-router to decide which skills and MCP capabilities should handle this task.
+```
+
 ## Core Logic
 
 The intended flow is:
