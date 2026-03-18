@@ -14,6 +14,15 @@ In short:
 
 > `skill-router` lets the model think first about which abilities should collaborate, then orchestrates them into a plan.
 
+In v3, that plan becomes a JSON-driven orchestration loop:
+
+- route the task
+- recommend and optionally auto-install missing skills or MCP executors after user approval
+- rerun routing after installation
+- execute one step at a time
+- surface each step's acceptance summary to the user
+- continue only after confirmation
+
 ## Host support status
 
 Current status should be understood in two layers:
@@ -225,6 +234,46 @@ The intended flow is:
 
 That means `skill-router` is a planner-orchestrator, not the main executor.
 
+## Host-Driven Reasoning Flow
+
+The default reasoning mode is now `host`.
+
+That means `plan_route.py` does not directly finalize the route by calling an upstream model endpoint when no host decision file is supplied.
+Instead, the flow is:
+
+1. run `plan_route.py --task "<task>"`
+2. receive `routing_status = "requires_host_reasoning"`
+3. pass `host_reasoning_request` and `host_reasoning_contract` to the host model
+4. let the host model produce the reflective routing JSON
+5. rerun `plan_route.py` with `--host-decision-file <decision.json>`
+6. receive the validated `final_plan` and `orchestration_state`
+
+In other words:
+
+- `skill-router` prepares the reasoning packet
+- the host model performs the reflection
+- `plan_route.py` validates and materializes the resulting route
+
+This split exists on purpose:
+
+- it keeps routing aligned with the live host model that will actually execute the plan
+- it avoids brittle direct API assumptions inside the router
+- it makes the router usable even when the host model is available but raw scripted HTTP access is not
+
+If you want to inspect the host handoff packet, run:
+
+```powershell
+python "$HOME/.codex/skills/skill-router/scripts/plan_route.py" --task "Write a document" --no-remote
+```
+
+You should see these top-level fields:
+
+- `routing_status`
+- `next_host_action`
+- `host_reasoning_request`
+- `host_reasoning_contract`
+- `host_handoff_instructions`
+
 ## Explicit Mode UX Contract
 
 When a user explicitly says to use `skill-router`, the route itself becomes part of the answer.
@@ -241,8 +290,11 @@ In explicit mode, `final_plan` now includes:
 - `presentation_contract`
 - `execution_gate`
 - `host_handoff_instructions`
+- `installation_gate`
 
-Those fields are meant to reduce common host mistakes, especially:
+The output also includes `orchestration_state`, which is the host-facing control protocol for the loop.
+
+These fields are meant to reduce common host mistakes, especially:
 
 - jumping straight into `brainstorming`, `drawio`, or another downstream skill
 - treating routing as invisible internal plumbing
@@ -253,6 +305,10 @@ Important:
 - in explicit mode, a valid route is not the same as "execute immediately"
 - `execution_ready` should stay `false` until the route has been shown and the user has confirmed to continue
 - the intended behavior is "show route and stop", not "show route and immediately start step 1"
+- if required capabilities are missing, the intended behavior is "show route, show recommended installs, ask for approval, install, then rerun routing with the same task"
+- once the user approves, the host model should automatically handle the install step through `skill-installer` rather than asking the user to manually run the install workflow
+- skill installation uses `skill-installer`
+- MCP installation uses provider adapters; v1 supports `Codex` and `Kiro`, while other hosts remain recommendation-only
 
 ## Why It Exists
 

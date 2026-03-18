@@ -54,6 +54,31 @@ def build_step_output_labels(step, executor):
     return labels
 
 
+def validate_orchestration_state(orchestration_state):
+    errors = []
+    warnings = []
+    steps = ((orchestration_state or {}).get("chosen_plan") or {}).get("steps", [])
+    for index, step in enumerate(steps, start=1):
+        if not step.get("step_id"):
+            errors.append(f"Chosen plan step {index} is missing a stable step_id.")
+
+    installation_gate = (orchestration_state or {}).get("installation_gate") or {}
+    next_host_action = (orchestration_state or {}).get("next_host_action")
+    if installation_gate.get("requires_user_approval") and installation_gate.get("approval_scope") == "required":
+        if next_host_action not in {"show_plan", "ask_install_approval", "invoke_skill_installer", "invoke_mcp_installer"}:
+            errors.append("Required install gate must lead to an install-related next_host_action.")
+
+    acceptance_gate = (orchestration_state or {}).get("acceptance_gate") or {}
+    if acceptance_gate.get("status") == "awaiting_user_confirmation" and next_host_action not in {"ask_step_acceptance", "show_plan"}:
+        errors.append("A pending acceptance gate may not skip directly to the next step.")
+
+    return {
+        "is_valid": not errors,
+        "errors": errors,
+        "warnings": warnings,
+    }
+
+
 def validate_route(task_info, decision, executors, policy_constraints=None):
     policy_constraints = policy_constraints or {}
     errors = []
@@ -81,6 +106,8 @@ def validate_route(task_info, decision, executors, policy_constraints=None):
     for step in steps:
         executor = executor_map.get(step.get("executor_id"), {})
         step_output_labels.append(build_step_output_labels(step, executor))
+        if not step.get("step_id"):
+            errors.append("Chosen plan step is missing a stable step_id.")
 
     available_outputs = []
     for index, step in enumerate(steps):

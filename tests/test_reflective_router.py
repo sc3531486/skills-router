@@ -16,11 +16,70 @@ from discovery_providers import (
     kiro_mcp_manifest_provider,
 )
 from execution_runner import execute_selected_plan
+from install_adapters import build_installation_plan
+from mcp_install_providers import build_mcp_install_adapter
+from orchestration_runner import build_initial_orchestration_state, advance_orchestration_state
 from policy_validator import validate_route
 from router_lib import infer_task, prepare_reasoning_executors, summarize_executor_for_reasoning
+from step_acceptance import build_acceptance_gate, build_step_receipt
 
 
 class SkillRouterV2Tests(unittest.TestCase):
+    def test_stage_one_selector_keeps_process_candidates_for_open_ended_product_task(self):
+        task_info = infer_task("我打算开发一款手机app，用于打卡健身的")
+        executors = [
+            {
+                "executor_id": "skill:codex:brainstorming",
+                "executor_type": "skill",
+                "name": "brainstorming",
+                "source": "local-skill",
+                "tool_family": "codex",
+                "capabilities": ["planning", "information-design"],
+                "keywords": ["brainstorm", "产品", "思路", "规划"],
+                "description": "Explore product direction before implementation.",
+                "constraints": {"process_only": True},
+            },
+            {
+                "executor_id": "skill:codex:writing-plans",
+                "executor_type": "skill",
+                "name": "writing-plans",
+                "source": "local-skill",
+                "tool_family": "codex",
+                "capabilities": ["planning"],
+                "keywords": ["plan", "规划", "步骤"],
+                "description": "Turn confirmed ideas into execution plans.",
+                "constraints": {"process_only": True},
+            },
+            {
+                "executor_id": "skill:codex:doc",
+                "executor_type": "skill",
+                "name": "doc",
+                "source": "local-skill",
+                "tool_family": "codex",
+                "capabilities": ["document"],
+                "keywords": ["doc", "report"],
+                "description": "Document output skill.",
+                "constraints": {"process_only": False},
+            },
+        ]
+        config = {
+            "reasoning": {
+                "stage_one": {
+                    "enabled": True,
+                    "candidate_limit": 3,
+                    "description_max_chars": 80,
+                    "keywords_limit": 6,
+                }
+            }
+        }
+
+        selected, meta = prepare_reasoning_executors(task_info, executors, config)
+        selected_ids = {item["executor_id"] for item in selected}
+
+        self.assertIn("skill:codex:brainstorming", selected_ids)
+        self.assertIn("skill:codex:writing-plans", selected_ids)
+        self.assertGreater(meta["selected_count"], 0)
+
     def test_execution_runner_resolves_resource_context_then_hands_off_skill(self):
         route_payload = {
             "task": "读取资源后写总结",
@@ -726,11 +785,13 @@ class SkillRouterV2Tests(unittest.TestCase):
             self.assertIn("routing_decision", payload)
             self.assertIn("validation_result", payload)
             self.assertIn("final_plan", payload)
+            self.assertIn("orchestration_state", payload)
             self.assertIn("reasoning_input", payload)
             self.assertTrue(payload["validation_result"]["is_valid"])
             self.assertEqual(payload["routing_decision"]["chosen_plan"]["plan_id"], "direct-doc")
             self.assertEqual(payload["final_plan"]["chosen_plan_id"], "direct-doc")
             self.assertEqual(payload["final_plan"]["ordered_steps"][0]["executor_id"], "skill:agents:doc-writer")
+            self.assertEqual(payload["final_plan"]["ordered_steps"][0]["step_id"], "direct-doc-step-1")
             self.assertTrue(payload["final_plan"]["validation"]["is_valid"])
             self.assertFalse(payload["final_plan"]["execution_ready"])
             self.assertTrue(payload["final_plan"]["ready_after_user_confirmation"])
@@ -746,6 +807,11 @@ class SkillRouterV2Tests(unittest.TestCase):
             self.assertNotIn("reflection_trace", payload["routing_decision"])
             self.assertLess(len(payload["reasoning_input"]["available_executors"]), len(payload["discovered_executors"]))
             self.assertNotIn("invocation_ref", payload["reasoning_input"]["available_executors"][0])
+            self.assertEqual(payload["orchestration_state"]["route_phase"], "planned")
+            self.assertEqual(payload["orchestration_state"]["next_host_action"], "show_plan")
+            self.assertEqual(payload["orchestration_state"]["after_show_action"], "execute_step")
+            self.assertEqual(payload["orchestration_state"]["chosen_plan"]["steps"][0]["step_id"], "direct-doc-step-1")
+            self.assertEqual(payload["orchestration_state"]["acceptance_gate"]["status"], "pending_execution")
 
     def test_plan_route_can_include_reflection_trace_for_debugging(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -839,6 +905,338 @@ class SkillRouterV2Tests(unittest.TestCase):
             self.assertNotIn("reflection_trace", payload["final_plan"])
             self.assertTrue(payload["final_plan"]["presentation_contract"]["must_show_to_user_before_execution"])
             self.assertFalse(payload["final_plan"]["execution_ready"])
+
+    def test_plan_route_surfaces_install_approval_flow_for_missing_required_capabilities(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            mock_response = temp_path / "mock-response.json"
+            mock_response.write_text(
+                json.dumps(
+                    {
+                        "task_understanding": "The task needs research-oriented product discovery support before execution.",
+                        "task_profile": {
+                            "deliverable": None,
+                            "actions": ["analyze"],
+                            "quality_goals": ["clarity"],
+                            "bounded_request": False,
+                            "process_intents": ["planning"],
+                            "user_language": "zh",
+                        },
+                        "needed_capabilities": ["research", "information-design"],
+                        "required_capabilities": ["research"],
+                        "optional_support_capabilities": ["information-design"],
+                        "missing_executors": [
+                            {
+                                "executor_type": "mcp_tool",
+                                "name": "product-research",
+                                "provider_family": "codex",
+                                "reason": "Would improve research and discovery quality."
+                            }
+                        ],
+                        "candidate_plans": [
+                            {
+                                "plan_id": "clarify-and-install-first",
+                                "summary": "No suitable local executor is available yet; recommend installing one before execution.",
+                                "steps": [],
+                                "pros": ["Avoids pretending that a local route already exists."],
+                                "cons": ["Needs user approval before installation."],
+                            }
+                        ],
+                        "chosen_plan_id": "clarify-and-install-first",
+                        "chosen_plan_reason": "A required capability is missing locally.",
+                        "why_not_others": ["No local skill or MCP executor currently covers the required capability."],
+                        "missing_required_capabilities": ["research"],
+                        "missing_optional_capabilities": ["information-design"],
+                        "reflection_trace": [
+                            {
+                                "focus": "capability",
+                                "subject": "research",
+                                "decision": "Treat research as required before execution.",
+                                "reason": "The request is still in early product definition and needs discovery support."
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            script_path = SCRIPTS_DIR / "plan_route.py"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--task",
+                    "我打算开发一款手机app，用于打卡健身的",
+                    "--mock-model-response",
+                    str(mock_response),
+                    "--no-remote",
+                    "--base-dir",
+                    str(Path(__file__).resolve().parents[1]),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            payload = json.loads(completed.stdout)
+
+            self.assertFalse(payload["validation_result"]["is_valid"])
+            self.assertFalse(payload["final_plan"]["execution_ready"])
+            self.assertFalse(payload["final_plan"]["route_valid"])
+            self.assertTrue(payload["final_plan"]["installation_gate"]["requires_user_approval"])
+            self.assertEqual(payload["final_plan"]["installation_gate"]["approval_scope"], "required")
+            self.assertEqual(payload["final_plan"]["execution_gate"]["next_action"], "show_plan_and_ask_install_approval")
+            self.assertEqual(payload["final_plan"]["installation_gate"]["next_action_if_approved"], "install_and_rerun_route")
+            self.assertEqual(payload["final_plan"]["installation_gate"]["approved_executor"]["executor_type"], "skill")
+            self.assertEqual(payload["final_plan"]["installation_gate"]["approved_executor"]["name"], "skill-installer")
+            self.assertEqual(payload["final_plan"]["installation_gate"]["approved_executor"]["host_action"], "invoke_skill_installer")
+            self.assertTrue(payload["recommended_install_required"])
+            self.assertTrue(payload["recommended_install_mcp"])
+            self.assertEqual(payload["recommended_install_mcp"][0]["provider_family"], "codex")
+            self.assertTrue(payload["recommended_install_mcp"][0]["supports_auto_install"])
+            self.assertEqual(payload["recommended_install_required"][0]["name"], "content-research-writer")
+            self.assertIn("询问用户是否安装", payload["user_summary"])
+            self.assertIn("skill-installer", payload["final_plan"]["host_handoff_instructions"])
+            self.assertIn("安装后", payload["final_plan"]["host_handoff_instructions"])
+            self.assertEqual(payload["orchestration_state"]["after_show_action"], "ask_install_approval")
+            self.assertEqual(payload["orchestration_state"]["installation_gate"]["recommended_targets"][0]["name"], "content-research-writer")
+
+    def test_build_installation_plan_supports_skill_and_mcp_recommendations(self):
+        skill_plan = build_installation_plan(
+            {
+                "executor_type": "skill",
+                "name": "content-research-writer",
+                "provider_family": "openai-curated",
+                "install_url": "https://github.com/openai/skills/tree/main/skills/.curated/content-research-writer",
+            }
+        )
+        mcp_plan = build_installation_plan(
+            {
+                "executor_type": "mcp_tool",
+                "name": "office-word",
+                "provider_family": "kiro",
+            }
+        )
+
+        self.assertEqual(skill_plan["approved_executor"]["name"], "skill-installer")
+        self.assertEqual(skill_plan["host_action"], "invoke_skill_installer")
+        self.assertEqual(mcp_plan["host_action"], "invoke_mcp_installer")
+        self.assertEqual(mcp_plan["approved_executor"]["name"], "kiro-mcp-installer")
+
+    def test_mcp_install_provider_marks_supported_hosts_only(self):
+        codex_adapter = build_mcp_install_adapter({"name": "figma", "provider_family": "codex"})
+        cursor_adapter = build_mcp_install_adapter({"name": "figma", "provider_family": "cursor"})
+
+        self.assertTrue(codex_adapter["supports_auto_install"])
+        self.assertEqual(codex_adapter["install_mode"], "provider-adapter")
+        self.assertFalse(cursor_adapter["supports_auto_install"])
+        self.assertEqual(cursor_adapter["availability"], "not_supported_yet")
+
+    def test_step_acceptance_and_orchestration_runner_form_single_step_loop(self):
+        route_payload = {
+            "task": "写一份结构化文档",
+            "mode": "explicit",
+            "final_plan": {
+                "installation_gate": {"requires_user_approval": False},
+            },
+            "routing_decision": {
+                "minimal_high_quality_combo": [
+                    {"executor_id": "skill:agents:doc-writer", "role": "primary", "why": "Direct output"}
+                ],
+                "step_acceptance_blueprint": [
+                    {
+                        "step_id": "direct-doc-step-1",
+                        "summary_template": "Review the generated editable document draft.",
+                        "acceptance_criteria": ["The draft is editable", "The draft matches the request"],
+                    }
+                ],
+                "chosen_plan": {
+                    "plan_id": "direct-doc",
+                    "steps": [
+                        {
+                            "step_id": "direct-doc-step-1",
+                            "step_type": "skill",
+                            "executor_id": "skill:agents:doc-writer",
+                            "purpose": "Write the requested document",
+                            "expected_output": "Editable document draft",
+                            "required_inputs": [],
+                            "reads_context_only": False,
+                            "may_mutate": False,
+                        }
+                    ],
+                },
+            },
+            "discovered_executors": [
+                {
+                    "executor_id": "skill:agents:doc-writer",
+                    "executor_type": "skill",
+                    "name": "doc-writer",
+                    "invocation_ref": "C:\\temp\\doc-writer",
+                    "constraints": {"process_only": False, "read_only": True},
+                }
+            ],
+        }
+
+        state = build_initial_orchestration_state(route_payload)
+        self.assertEqual(state["next_host_action"], "show_plan")
+
+        state = advance_orchestration_state(state, {"type": "plan_shown"})
+        self.assertEqual(state["next_host_action"], "execute_step")
+        self.assertEqual(state["route_phase"], "awaiting_step_execution")
+
+        receipt = build_step_receipt(
+            step=route_payload["routing_decision"]["chosen_plan"]["steps"][0],
+            executor=route_payload["discovered_executors"][0],
+            payload={"content": "Draft content"},
+            blueprint=route_payload["routing_decision"]["step_acceptance_blueprint"][0],
+        )
+        acceptance_gate = build_acceptance_gate(receipt)
+        self.assertEqual(acceptance_gate["status"], "awaiting_user_confirmation")
+
+        state = advance_orchestration_state(state, {"type": "step_executed", "step_receipt": receipt})
+        self.assertEqual(state["next_host_action"], "ask_step_acceptance")
+        self.assertEqual(state["route_phase"], "awaiting_step_acceptance")
+
+        state = advance_orchestration_state(state, {"type": "step_accepted", "accepted": True})
+        self.assertEqual(state["next_host_action"], "finish_route")
+        self.assertEqual(state["route_phase"], "completed")
+
+    def test_plan_route_in_host_mode_emits_reasoning_packet_without_network_call(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            tool_home = temp_path / ".agents"
+            skill_dir = tool_home / "skills" / "doc-writer"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: doc-writer\ndescription: Use when writing structured documents.\n---\n",
+                encoding="utf-8",
+            )
+
+            script_path = SCRIPTS_DIR / "plan_route.py"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--task",
+                    "写一份结构化文档",
+                    "--tool-home",
+                    str(tool_home),
+                    "--no-remote",
+                    "--base-dir",
+                    str(Path(__file__).resolve().parents[1]),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            payload = json.loads(completed.stdout)
+
+            self.assertEqual(payload["routing_status"], "requires_host_reasoning")
+            self.assertIn("host_reasoning_request", payload)
+            self.assertIn("host_reasoning_contract", payload)
+            self.assertEqual(payload["next_host_action"], "reflect_and_finalize_route")
+            self.assertIn("host_handoff_instructions", payload)
+            self.assertIn("--host-decision-file", payload["host_handoff_instructions"]["finalize_route"])
+            self.assertNotIn("final_plan", payload)
+
+    def test_plan_route_can_finalize_from_host_decision_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            tool_home = temp_path / ".agents"
+            skill_dir = tool_home / "skills" / "doc-writer"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: doc-writer\ndescription: Use when writing structured documents.\n---\n",
+                encoding="utf-8",
+            )
+            host_decision = temp_path / "host-decision.json"
+            host_decision.write_text(
+                json.dumps(
+                    {
+                        "task_understanding": "Write a document from the available skill.",
+                        "task_profile": {
+                            "deliverable": "document",
+                            "actions": ["summarize"],
+                            "quality_goals": ["accuracy"],
+                            "bounded_request": False,
+                            "process_intents": [],
+                            "user_language": "zh",
+                        },
+                        "needed_capabilities": ["document"],
+                        "required_capabilities": ["document"],
+                        "optional_support_capabilities": ["review"],
+                        "minimal_high_quality_combo": [
+                            {
+                                "executor_id": "skill:agents:doc-writer",
+                                "role": "primary",
+                                "why": "Directly produces the requested editable document."
+                            }
+                        ],
+                        "missing_executors": [],
+                        "step_acceptance_blueprint": [
+                            {
+                                "step_id": "direct-doc-step-1",
+                                "summary_template": "Review the generated editable document draft.",
+                                "acceptance_criteria": ["The draft is editable", "The draft matches the request"]
+                            }
+                        ],
+                        "candidate_plans": [
+                            {
+                                "plan_id": "direct-doc",
+                                "summary": "Use the document skill directly.",
+                                "steps": [
+                                    {
+                                        "step_id": "direct-doc-step-1",
+                                        "step_type": "skill",
+                                        "executor_id": "skill:agents:doc-writer",
+                                        "purpose": "Write the requested document",
+                                        "required_inputs": [],
+                                        "expected_output": "Editable document draft",
+                                        "reads_context_only": False,
+                                        "may_mutate": False,
+                                    }
+                                ],
+                                "pros": ["Simple"],
+                                "cons": [],
+                            }
+                        ],
+                        "chosen_plan_id": "direct-doc",
+                        "chosen_plan_reason": "The skill already covers the document task.",
+                        "why_not_others": [],
+                        "missing_required_capabilities": [],
+                        "missing_optional_capabilities": [],
+                        "reflection_trace": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            script_path = SCRIPTS_DIR / "plan_route.py"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--task",
+                    "写一份结构化文档",
+                    "--tool-home",
+                    str(tool_home),
+                    "--host-decision-file",
+                    str(host_decision),
+                    "--no-remote",
+                    "--base-dir",
+                    str(Path(__file__).resolve().parents[1]),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            payload = json.loads(completed.stdout)
+
+            self.assertEqual(payload["routing_status"], "completed")
+            self.assertIn("final_plan", payload)
+            self.assertEqual(payload["final_plan"]["chosen_plan_id"], "direct-doc")
 
 
 if __name__ == "__main__":

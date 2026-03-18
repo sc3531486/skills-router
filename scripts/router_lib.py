@@ -135,6 +135,10 @@ PROCESS_INTENT_PATTERNS = {
         "分步",
         "步骤",
         "落地",
+        "开发",
+        "产品",
+        "app",
+        "应用",
     ],
     "brainstorming": [
         "brainstorm",
@@ -144,6 +148,8 @@ PROCESS_INTENT_PATTERNS = {
         "思路",
         "设计",
         "拆解",
+        "想清楚",
+        "构思",
     ],
     "debugging": [
         "debug",
@@ -371,6 +377,8 @@ def infer_actions(text, deliverables):
     actions = collect_ordered_matches(text, ACTION_PATTERNS)
     if not actions and deliverables:
         return ["create"]
+    if not actions and contains_any(text, PROCESS_INTENT_PATTERNS["planning"] + PROCESS_INTENT_PATTERNS["brainstorming"]):
+        return ["analyze"]
     return actions
 
 
@@ -533,6 +541,9 @@ def score_executor_for_stage_one(task_info, executor):
     task_profile = task_info.get("task_profile", {})
     bounded_request = bool(task_profile.get("bounded_request"))
     has_deliverable = bool(task_profile.get("deliverable"))
+    open_ended_process_task = not has_deliverable and (
+        bool(process_intents) or not task_profile.get("actions")
+    )
 
     capabilities = set(executor.get("capabilities", []))
     deliverable_caps = set(executor.get("deliverable_capabilities", []))
@@ -570,6 +581,9 @@ def score_executor_for_stage_one(task_info, executor):
         if bounded_request and has_deliverable:
             score -= 120
             reasons.append("bounded-process-penalty")
+        elif open_ended_process_task:
+            score += 30
+            reasons.append("open-ended-process-boost")
         elif not process_intents:
             score -= 40
             reasons.append("unneeded-process-penalty")
@@ -1096,8 +1110,10 @@ def build_recommendations(task_info, missing_caps, local_index, remote_entries, 
             continue
         candidates.append(
             {
+                "executor_type": "skill",
                 "name": entry.get("name"),
                 "source": entry.get("source"),
+                "provider_family": entry.get("source"),
                 "repo": entry.get("repo"),
                 "path": entry.get("path"),
                 "capabilities": entry.get("capabilities", []),
@@ -1110,3 +1126,24 @@ def build_recommendations(task_info, missing_caps, local_index, remote_entries, 
         )
     candidates.sort(key=lambda item: (-item["score"], item["name"]))
     return candidates[:12]
+
+
+def build_mcp_recommendations(missing_executors):
+    recommendations = []
+    for item in missing_executors or []:
+        if item.get("executor_type") not in {"mcp_tool", "mcp_resource"}:
+            continue
+        provider_family = item.get("provider_family") or "unknown"
+        supports_auto_install = provider_family in {"codex", "kiro"}
+        recommendations.append(
+            {
+                "name": item.get("name"),
+                "executor_type": item.get("executor_type"),
+                "provider_family": provider_family,
+                "reason": item.get("reason"),
+                "install_mode": "provider-adapter" if supports_auto_install else "recommend-only",
+                "supports_auto_install": supports_auto_install,
+                "availability": "supported" if supports_auto_install else "not_supported_yet",
+            }
+        )
+    return recommendations

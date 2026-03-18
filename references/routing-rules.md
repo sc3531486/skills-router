@@ -167,6 +167,8 @@ Rules:
 - optional gaps do not block execution
 - optional gaps should still produce upgrade recommendations
 - recommendations must never auto-install
+- when a required gap has a viable install recommendation, the host should ask for approval, install if approved, and rerun routing for the same task instead of pretending the original route can proceed unchanged
+- per-step execution should feed a step receipt and acceptance gate back into the orchestration state before the host advances
 
 ## Recommendation order
 

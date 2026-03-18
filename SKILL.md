@@ -27,14 +27,22 @@ The normal path is:
 
 1. Load `assets/router-config.json`.
 2. Run `scripts/plan_route.py --task "<user request>"`.
-3. Show the returned `user_summary` and `final_plan` to the user before invoking downstream skills.
-4. Let the host model follow the validated `routing_decision.chosen_plan` only if `validation_result.is_valid = true`.
-5. If `recommended_install_required` is non-empty, stop and wait for user approval before installing anything.
+3. If the output says `routing_status = requires_host_reasoning`, hand `host_reasoning_request` and `host_reasoning_contract` to the host model and let it produce the reflective routing JSON.
+4. Feed that JSON back into `scripts/plan_route.py` with `--host-decision-file`.
+5. Show the returned `user_summary` and `final_plan` to the user before invoking downstream skills.
+6. Let the host model follow the validated `routing_decision.chosen_plan` only if `validation_result.is_valid = true`.
+7. If `recommended_install_required` is non-empty, stop and wait for user approval before installing anything.
 
 Example:
 
 ```powershell
 python "$HOME/.codex/skills/skill-router/scripts/plan_route.py" --task "Create an editable architecture diagram and explain the flow"
+```
+
+If host reasoning is needed, the finalize step looks like:
+
+```powershell
+python "$HOME/.codex/skills/skill-router/scripts/plan_route.py" --task "Create an editable architecture diagram and explain the flow" --host-decision-file "decision.json"
 ```
 
 ## Workflow
@@ -95,7 +103,10 @@ It then runs a stage-one candidate selector:
 
 ### 3. Ask the model to plan
 
-The model receives:
+In default `host` mode, the router does not directly perform this final reasoning call itself.
+It prepares a reasoning packet for the host model.
+
+The host model receives:
 
 - the task
 - the heuristic seed task profile
@@ -119,6 +130,14 @@ The model must return JSON containing:
 - `missing_optional_capabilities`
 - `reflection_trace`
 
+When `plan_route.py` is waiting for the host model, the output includes:
+
+- `routing_status = requires_host_reasoning`
+- `next_host_action = reflect_and_finalize_route`
+- `host_reasoning_request`
+- `host_reasoning_contract`
+- `host_handoff_instructions`
+
 ### 4. Validate the route
 
 The router never trusts the model blindly.
@@ -139,6 +158,8 @@ Validation also checks step ordering when a route claims that one step depends o
 - If the plan is valid and there is no required install gap, hand the chosen plan back to the host model for execution.
 - If only optional gaps remain, continue with the validated route and show optional recommendations as upgrades.
 - If required gaps remain, stop and wait for user confirmation before installing anything.
+- If the user approves a required install recommendation, install it first and then rerun `plan_route.py` for the same task before executing downstream steps.
+- The host model should handle that install step by invoking `skill-installer`; the user should only need to approve, not manually perform the installation flow.
 
 For explicit invocations, present the plan first in a compact visible format such as:
 
@@ -175,8 +196,19 @@ Default output is concise at the top level:
 - `presentation_contract`
 - `execution_gate`
 - `host_handoff_instructions`
+- `installation_gate`
 
 Use those fields as hard guidance for explicit invocations.
+
+The top-level output also includes `orchestration_state`.
+Treat it as the authoritative loop state for the host:
+
+- initial show-plan step
+- install approval and installer invocation
+- reroute after install
+- per-step execution
+- per-step acceptance
+- finish
 
 Internal reasoning payloads are not shown by default.
 Only use `--include-reasoning-input` when debugging router behavior.
@@ -193,6 +225,10 @@ The reasoning payload now also includes stage-one selection details and pruned d
 - In explicit mode, treat `execution_ready = false` as intentional even when the route is valid; the missing piece is user confirmation, not route quality.
 - In explicit mode, after showing the route, stop the current turn instead of auto-entering `brainstorming`, `drawio`, or any other first step.
 - Do not ask "want to open a browser" or similar optional host UX questions until after the route has already been shown and the next step actually needs that capability.
+- If `installation_gate.requires_user_approval = true`, first ask whether the user wants to install the recommended skill, then rerun routing after installation instead of forcing the old route forward.
+- When approval is granted, use `installation_gate.approved_executor` to see that the host should call `skill-installer` automatically.
+- If `recommended_install_mcp` is non-empty, use the MCP provider adapter data to decide whether the host can auto-install now or should stay in recommendation-only mode.
+- When a step finishes, generate a `step_receipt`, surface the acceptance summary, and wait for the user's confirmation before moving to the next step.
 - Do not dump the full model reasoning unless the user asks.
 - Keep the user's language throughout the route summary.
 - For bounded requests, do not add generic process skills unless the model chooses a valid process route and the policy allows it.
