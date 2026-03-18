@@ -75,6 +75,94 @@ For explicit invocations, treat the route presentation as a pause point:
 - do not ask optional browser, canvas, or visualization prompts before the route is visible
 - do not start a downstream skill workflow in the same breath as if routing were invisible plumbing
 
+### When to rerun the router
+
+Treat `skill-router` as a stage orchestrator.
+Do not use it only once at the beginning, but also do not rerun it on every message.
+
+Recommended session behavior:
+
+- the user explicitly invokes `skill-router` once to arm the session
+- after that, the host should treat later reroutes as automatic follow-up behavior
+- the user should not need to repeat `skill-router` on every turn
+- the host should continue the accepted route by default and only reroute when a trigger is hit
+
+Minimal host shortcut:
+
+1. no accepted route yet -> `reroute-now`
+2. reroute trigger hit -> `reroute-now`
+3. otherwise -> `continue-current-route`
+
+This shortcut is also emitted in the JSON output as `host_auto_routing_contract`.
+Prefer consuming that structured contract directly instead of re-deriving the policy from the narrative text.
+The key fields are:
+
+- `default_action`
+- `triggered_action`
+- `decision_rules`
+- `requires_first_explicit_activation`
+
+For hosts that want an even thinner integration path, the router also emits a derived `host_route_signal`:
+
+- `router_state`
+- `host_next_route_decision`
+- `host_reroute_trigger_matched`
+- `matched_trigger_label`
+- `reason`
+
+Use it as a convenience field only.
+It should help the host quickly answer "continue current route or reroute now?" without replacing the fuller routing contract.
+
+The router also emits a derived `host_turn_signal` for the current turn:
+
+- `next_host_action`
+- `requires_user_visible_message`
+- `must_end_turn`
+- `after_user_confirmation_action`
+- `reason`
+
+Use the split like this:
+
+- `host_route_signal` decides whether to reroute
+- `host_turn_signal` decides what the host should do right now
+
+Both are convenience fields derived from the richer routing and orchestration outputs.
+
+For user-facing rendering, the router also emits a derived `routing_status_card`:
+
+- `phase`
+- `headline`
+- `user_action`
+- `next_step`
+- `waiting_for_user`
+- `reason`
+
+Use the split like this:
+
+- `host_route_signal` answers route control
+- `host_turn_signal` answers host turn control
+- `routing_status_card` answers what short status the user should currently see
+
+Use or rerun it at these boundaries:
+
+- `initial-routing`
+  - the first time a clear task needs an initial route
+- `stage-rerouting`
+  - the work changes phase and the best executor mix may change with it
+- `post-install-rerouting`
+  - a missing skill or MCP has just been installed
+- `acceptance-rerouting`
+  - a step was rejected, needs rollback, redo, or route rewrite
+- `improvement-rerouting`
+  - a worthwhile proactive improvement suggests adding or swapping support executors
+- `goal-change-rerouting`
+  - the user's target, audience, constraints, or quality bar materially change
+
+Do not reroute when:
+
+- the user is only making a small same-stage clarification
+- the current route still fits and no new capability or quality risk has appeared
+
 ### 2. Discover executors
 
 The router discovers four things before any reasoning:
@@ -110,7 +198,12 @@ The host model receives:
 
 - the task
 - the heuristic seed task profile
+- the heuristic `task_stage`
+- the heuristic `needed_capability_groups`
 - all discovered executors
+- reflection roles for delivery, quality critic, and design/editor review
+- a second-pass review directive
+- a quality-gate policy
 - policy constraints
 - execution mode
 - user language
@@ -122,6 +215,10 @@ The model must return JSON containing:
 - `needed_capabilities`
 - `required_capabilities`
 - `optional_support_capabilities`
+- `role_findings`
+- `completion_assessment`
+- `quality_gate`
+- `second_pass_review`
 - `candidate_plans`
 - `chosen_plan_id`
 - `chosen_plan_reason`
@@ -138,6 +235,16 @@ When `plan_route.py` is waiting for the host model, the output includes:
 - `host_reasoning_contract`
 - `host_handoff_instructions`
 
+The point of these extra role fields is to prevent shallow routing.
+The host model should not stop at "which executor can do this".
+It should also ask:
+
+- what will actually get the user to a good result
+- what still looks underpowered or under-designed
+- what deserves proactive strengthening before the route is considered good enough
+
+For quality-sensitive tasks such as optimize/polish/improve requests, the host should not approve a bare single-executor route unless it also adds explicit proactive improvement checks.
+
 ### 4. Validate the route
 
 The router never trusts the model blindly.
@@ -152,6 +259,12 @@ It validates the chosen plan against hard rules, including:
 The router also treats the program-generated task profile as a seed, not ground truth.
 Final validation and user-facing output use the model-corrected `task_profile`, `required_capabilities`, and `optional_support_capabilities`.
 Validation also checks step ordering when a route claims that one step depends on context produced by another step later in the plan.
+
+That means:
+
+- the program can lightly hint "this looks like discovery vs design vs implementation"
+- and it can lightly hint "this probably needs product-definition vs ui-design vs frontend"
+- but the host model still makes the final reflective orchestration decision
 
 ### 5. Hand off or stop
 
@@ -197,8 +310,19 @@ Default output is concise at the top level:
 - `execution_gate`
 - `host_handoff_instructions`
 - `installation_gate`
+- `quality_reflection`
+- `proactive_improvement_loop`
 
 Use those fields as hard guidance for explicit invocations.
+
+`quality_reflection` is intentionally user-visible.
+It is the compact summary that shows the route was reviewed through the role-split reflection protocol rather than chosen only for baseline feasibility.
+
+`proactive_improvement_loop` is also intentionally visible.
+It carries:
+
+- route-level follow-up actions produced by the second-pass review
+- step-level improvement checks that should be revisited before user acceptance
 
 The top-level output also includes `orchestration_state`.
 Treat it as the authoritative loop state for the host:

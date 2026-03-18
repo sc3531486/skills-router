@@ -5,6 +5,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/doc",
     "capabilities": ["document", "docx", "writing"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
     "keywords": ["doc", "docx", "word", "report", "memo", "materials"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -14,6 +16,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/slides",
     "capabilities": ["presentation", "slides", "ppt"],
+    "capability_groups": ["documentation", "information-design", "ui-design"],
+    "preferred_task_stages": ["delivery", "design"],
     "keywords": ["slides", "ppt", "pptx", "deck", "presentation", "powerpoint"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -23,6 +27,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/pdf",
     "capabilities": ["pdf", "document", "extraction"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
     "keywords": ["pdf", "extract", "annotate", "merge", "read pdf"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -32,6 +38,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/spreadsheet",
     "capabilities": ["spreadsheet", "xlsx", "csv", "table"],
+    "capability_groups": ["documentation", "testing"],
+    "preferred_task_stages": ["delivery", "validation"],
     "keywords": ["excel", "xlsx", "csv", "spreadsheet", "table"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -41,6 +49,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/playwright",
     "capabilities": ["browser", "automation", "web"],
+    "capability_groups": ["frontend", "testing", "ui-design"],
+    "preferred_task_stages": ["design", "implementation", "validation"],
     "keywords": ["browser", "web", "automation", "form", "scrape", "ui"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -50,6 +60,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/screenshot",
     "capabilities": ["image", "capture", "visual"],
+    "capability_groups": ["ui-design", "documentation"],
+    "preferred_task_stages": ["design", "delivery"],
     "keywords": ["screenshot", "capture", "screen", "visual"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -59,6 +71,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/jupyter-notebook",
     "capabilities": ["analysis", "notebook", "data"],
+    "capability_groups": ["testing", "documentation", "backend"],
+    "preferred_task_stages": ["architecture", "validation", "delivery"],
     "keywords": ["jupyter", "notebook", "analysis", "experiment", "data"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -68,6 +82,8 @@
     "repo": "openai/skills",
     "path": "skills/.curated/openai-docs",
     "capabilities": ["documentation", "openai", "api"],
+    "capability_groups": ["documentation", "backend"],
+    "preferred_task_stages": ["architecture", "implementation", "delivery"],
     "keywords": ["openai", "api", "models", "gpt", "docs"],
     "install_hint": "Install from OpenAI curated skills"
   },
@@ -77,6 +93,8 @@
     "repo": "ComposioHQ/awesome-claude-skills",
     "path": "document-skills",
     "capabilities": ["document", "pdf", "presentation", "spreadsheet"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
     "keywords": ["documents", "pdf", "pptx", "xlsx", "docx"],
     "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
   },
@@ -86,6 +104,8 @@
     "repo": "ComposioHQ/awesome-claude-skills",
     "path": "content-research-writer",
     "capabilities": ["research", "information-design", "writing", "documentation"],
+    "capability_groups": ["product-definition", "information-design", "documentation"],
+    "preferred_task_stages": ["discovery", "delivery"],
     "keywords": ["research", "writer", "brief", "materials", "content"],
     "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
   },
@@ -95,6 +115,8 @@
     "repo": "ComposioHQ/awesome-claude-skills",
     "path": "canvas-design",
     "capabilities": ["information-design", "visual-design"],
+    "capability_groups": ["information-design", "ui-design"],
+    "preferred_task_stages": ["design", "delivery"],
     "keywords": ["canvas", "design", "visual", "layout", "diagram", "storytelling"],
     "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
   },
@@ -104,6 +126,8 @@
     "repo": "ComposioHQ/awesome-claude-skills",
     "path": "brand-guidelines",
     "capabilities": ["visual-design"],
+    "capability_groups": ["ui-design", "information-design"],
+    "preferred_task_stages": ["design", "delivery"],
     "keywords": ["brand", "design", "visual", "layout", "presentation"],
     "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
   },
@@ -122,6 +146,8 @@
     "repo": "ComposioHQ/awesome-claude-skills",
     "path": "meeting-insights-analyzer",
     "capabilities": ["analysis", "meetings", "documentation"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
     "keywords": ["meeting", "notes", "insights", "summary"],
     "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
   },
@@ -131,6 +157,8 @@
     "repo": "ComposioHQ/awesome-claude-skills",
     "path": "webapp-testing",
     "capabilities": ["browser", "testing", "automation"],
+    "capability_groups": ["testing", "frontend", "ui-design"],
+    "preferred_task_stages": ["validation", "implementation"],
     "keywords": ["webapp", "testing", "browser", "ui"],
     "install_hint": "Install from the ComposioHQ/awesome-claude-skills repo"
   },
@@ -140,6 +168,8 @@
     "repo": "numman-ali/n-skills",
     "path": "skills/workflow/orchestration",
     "capabilities": ["workflow", "orchestration", "automation"],
+    "capability_groups": ["product-definition"],
+    "preferred_task_stages": ["discovery", "implementation"],
     "keywords": ["orchestration", "multi-agent", "routing", "workflow"],
     "install_hint": "Install from the n-skills repo"
   },

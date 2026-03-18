@@ -39,6 +39,7 @@ def build_step_receipt(step, executor, payload, blueprint=None, artifacts=None, 
         "acceptance_criteria": list(blueprint.get("acceptance_criteria", [])) or [
             f"Output matches: {step.get('expected_output')}"
         ],
+        "improvement_checks": list(blueprint.get("improvement_checks", [])),
         "user_confirmation_required": user_confirmation_required,
     }
 
@@ -50,6 +51,7 @@ def build_acceptance_gate(step_receipt):
         "step_id": step_receipt.get("step_id"),
         "output_summary": step_receipt.get("output_summary"),
         "acceptance_criteria": step_receipt.get("acceptance_criteria", []),
+        "proactive_review_questions": step_receipt.get("improvement_checks", []),
         "next_action_if_accepted": "continue_to_next_step",
         "next_action_if_rejected": "show_plan",
     }

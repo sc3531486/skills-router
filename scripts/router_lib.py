@@ -104,6 +104,7 @@ DELIVERABLE_PATTERNS = {
 
 ACTION_PATTERNS = {
     "create": ["create", "make", "build", "draw", "generate", "做", "画", "生成", "制作"],
+    "optimize": ["optimize", "improve", "polish", "refine", "revise", "rewrite", "upgrade", "优化", "润色", "改进", "提升", "完善", "美化"],
     "explain": ["introduce", "overview", "explain", "walk through", "介绍", "总览", "讲清楚", "说明"],
     "summarize": ["summarize", "summary", "提炼", "总结", "归纳"],
     "review": ["review", "check", "validate", "audit", "核对", "校验", "审校", "复核", "检查"],
@@ -113,10 +114,10 @@ ACTION_PATTERNS = {
 }
 
 QUALITY_GOAL_PATTERNS = {
-    "clarity": ["clear", "clarity", "structured", "structure", "清晰", "结构化", "条理", "讲清楚", "一页讲明白"],
+    "clarity": ["clear", "clarity", "structured", "structure", "readable", "readability", "清晰", "结构化", "条理", "讲清楚", "一页讲明白", "易读", "可读性"],
     "speed": ["fast", "quick", "first draft", "先出首版", "快速", "先给首版", "尽快"],
     "accuracy": ["accurate", "accuracy", "correct", "精准", "准确", "核对", "校验"],
-    "visual-polish": ["beautiful", "professional", "aesthetic", "visual", "layout", "好看", "专业", "美观", "审美", "视觉"],
+    "visual-polish": ["beautiful", "professional", "aesthetic", "visual", "layout", "formatting", "style", "theme", "好看", "专业", "美观", "审美", "视觉", "排版", "版式", "样式", "风格", "背景", "格式"],
     "teachability": ["overview", "teach", "training", "walk through", "introduce", "总览", "介绍", "培训", "汇报", "讲清楚"],
     "editability": ["editable", "draw.io", "drawio", ".pptx", ".docx", ".xlsx", "可编辑"],
 }
@@ -128,25 +129,23 @@ PROCESS_INTENT_PATTERNS = {
         "roadmap",
         "implementation plan",
         "multi-step",
+        "execution plan",
+        "project plan",
         "规划",
-        "方案",
-        "计划",
         "实施计划",
         "分步",
         "步骤",
         "落地",
-        "开发",
-        "产品",
-        "app",
-        "应用",
+        "开发方案",
+        "落地方案",
+        "功能规划",
     ],
     "brainstorming": [
         "brainstorm",
         "ideate",
         "think through",
-        "梳理",
-        "思路",
-        "设计",
+        "需求梳理",
+        "方案梳理",
         "拆解",
         "想清楚",
         "构思",
@@ -172,11 +171,245 @@ PROCESS_INTENT_PATTERNS = {
     ],
 }
 
+TASK_STAGE_PATTERNS = {
+    "discovery": [
+        "mvp",
+        "需求",
+        "产品规划",
+        "产品定义",
+        "用户故事",
+        "从零开始",
+        "从0到1",
+        "从 0 到 1",
+    ],
+    "architecture": [
+        "architecture",
+        "system design",
+        "technical design",
+        "service",
+        "services",
+        "api",
+        "database",
+        "backend",
+        "infra",
+        "infrastructure",
+        "kubernetes",
+        "架构",
+        "系统设计",
+        "技术方案",
+        "接口",
+        "数据库",
+        "后端",
+        "部署",
+        "服务",
+    ],
+    "design": [
+        "ui",
+        "ux",
+        "screen",
+        "page",
+        "pages",
+        "layout",
+        "wireframe",
+        "prototype",
+        "figma",
+        "界面",
+        "页面",
+        "交互",
+        "原型",
+        "线框图",
+    ],
+    "implementation": [
+        "implement",
+        "implementation",
+        "code",
+        "coding",
+        "write code",
+        "frontend",
+        "backend",
+        "react",
+        "vue",
+        "开发",
+        "实现",
+        "编码",
+        "写代码",
+        "前端",
+    ],
+    "validation": [
+        "test",
+        "testing",
+        "debug",
+        "bug",
+        "verify",
+        "validation",
+        "qa",
+        "测试",
+        "调试",
+        "排查",
+        "验证",
+        "验收",
+        "校验",
+    ],
+    "delivery": [
+        ".docx",
+        ".pptx",
+        ".pdf",
+        ".xlsx",
+        "document",
+        "report",
+        "presentation",
+        "slide deck",
+        "slides",
+        "汇报",
+        "文档",
+        "报告",
+        "材料",
+        "演示文稿",
+        "幻灯片",
+    ],
+}
+
+CAPABILITY_GROUP_PATTERNS = {
+    "product-definition": [
+        "product",
+        "requirements",
+        "requirement",
+        "mvp",
+        "roadmap",
+        "plan",
+        "planning",
+        "brainstorm",
+        "用户故事",
+        "需求",
+        "产品",
+        "规划",
+        "构思",
+    ],
+    "architecture": [
+        "architecture",
+        "system design",
+        "technical design",
+        "api",
+        "database",
+        "service",
+        "services",
+        "infra",
+        "backend architecture",
+        "架构",
+        "系统设计",
+        "技术方案",
+        "接口",
+        "数据库",
+        "服务",
+    ],
+    "information-design": [
+        "overview",
+        "explain",
+        "storytelling",
+        "structure",
+        "structured",
+        "outline",
+        "clarity",
+        "teach",
+        "介绍",
+        "总览",
+        "讲清楚",
+        "结构化",
+        "条理",
+    ],
+    "ui-design": [
+        "ui",
+        "ux",
+        "screen",
+        "page",
+        "wireframe",
+        "prototype",
+        "figma",
+        "界面",
+        "页面",
+        "交互",
+        "原型",
+        "线框图",
+        "登录页",
+        "落地页",
+    ],
+    "frontend": [
+        "frontend",
+        "front-end",
+        "react",
+        "vue",
+        "html",
+        "css",
+        "web app",
+        "前端",
+        "页面实现",
+        "实现思路",
+        "前端实现",
+    ],
+    "backend": [
+        "backend",
+        "server",
+        "api",
+        "database",
+        "auth",
+        "storage",
+        "service",
+        "后端",
+        "接口",
+        "数据库",
+        "鉴权",
+        "服务端",
+    ],
+    "testing": [
+        "test",
+        "testing",
+        "debug",
+        "bug",
+        "verify",
+        "validation",
+        "qa",
+        "review",
+        "测试",
+        "调试",
+        "排查",
+        "验证",
+        "验收",
+        "校验",
+    ],
+    "documentation": [
+        "document",
+        "report",
+        "docx",
+        "pdf",
+        "ppt",
+        "pptx",
+        "slides",
+        "brief",
+        "spec",
+        "prd",
+        "文档",
+        "报告",
+        "材料",
+        "演示文稿",
+        "幻灯片",
+        "方案",
+    ],
+}
+
 QUALITY_TO_SUPPORT = {
     "clarity": "information-design",
     "teachability": "information-design",
     "visual-polish": "visual-design",
     "accuracy": "review",
+}
+
+ARTIFACT_OPTIMIZATION_QUALITY_PROFILES = {
+    "document": ["clarity", "visual-polish", "editability"],
+    "presentation": ["clarity", "visual-polish", "teachability", "editability"],
+    "diagram": ["clarity", "visual-polish", "teachability", "editability"],
+    "spreadsheet": ["clarity", "accuracy", "editability"],
+    "pdf": ["clarity", "visual-polish"],
+    "image": ["visual-polish", "clarity"],
 }
 
 SUPPORT_PATTERNS = {
@@ -230,6 +463,27 @@ SUPPORT_PATTERNS = {
 
 LANGUAGE_PATTERNS = ["中文", "英文", "english", "chinese"]
 LAYOUT_PATTERNS = ["横向", "纵向", "left to right", "top to bottom", "layout", "一页"]
+REFINEMENT_PATTERNS = ACTION_PATTERNS["optimize"] + ["调整", "修改", "重写", "优化一下"]
+DESIGN_SENSITIVE_PATTERNS = ["layout", "formatting", "style", "theme", "visual", "排版", "版式", "样式", "风格", "背景", "层次", "可读性", "专业感"]
+OPEN_ENDED_BUILD_PATTERNS = [
+    "build a",
+    "build an",
+    "develop a",
+    "develop an",
+    "create a new",
+    "make a new",
+    "start a new",
+    "打算开发",
+    "准备开发",
+    "想开发",
+    "开发一款",
+    "开发一个",
+    "做一款",
+    "做一个",
+    "从零开始",
+    "从0到1",
+    "从 0 到 1",
+]
 EXPLICIT_PRESENTATION_ARTIFACT_PATTERNS = [
     ".pptx",
     "powerpoint",
@@ -387,7 +641,42 @@ def infer_quality_goals(text):
 
 
 def infer_process_intents(text):
-    return collect_ordered_matches(text, PROCESS_INTENT_PATTERNS)
+    intents = collect_ordered_matches(text, PROCESS_INTENT_PATTERNS)
+    if contains_any(text, OPEN_ENDED_BUILD_PATTERNS) and "planning" not in intents:
+        intents.insert(0, "planning")
+    return intents
+
+
+def merge_ordered_values(existing, additions):
+    merged = list(existing)
+    for item in additions:
+        if item not in merged:
+            merged.append(item)
+    return merged
+
+
+def infer_latent_quality_goals(text, deliverables, actions, explicit_quality_goals):
+    latent = []
+    deliverable_set = set(deliverables)
+    action_set = set(actions)
+    is_refinement = "optimize" in action_set or contains_any(text, REFINEMENT_PATTERNS)
+    is_layout_sensitive = contains_any(text, DESIGN_SENSITIVE_PATTERNS)
+
+    if is_refinement:
+        for deliverable in deliverables:
+            latent = merge_ordered_values(
+                latent,
+                ARTIFACT_OPTIMIZATION_QUALITY_PROFILES.get(deliverable, []),
+            )
+    if is_layout_sensitive and "visual-polish" not in latent:
+        latent = merge_ordered_values(latent, ["visual-polish"])
+    if is_layout_sensitive and deliverable_set & {"document", "presentation", "diagram"}:
+        latent = merge_ordered_values(latent, ["clarity"])
+
+    if contains_any(text, [".docx", ".pptx", ".xlsx"]):
+        latent = merge_ordered_values(latent, ["editability"])
+
+    return [goal for goal in latent if goal not in explicit_quality_goals]
 
 
 def detect_topic_signal(text):
@@ -413,12 +702,81 @@ def infer_bounded_request(text, deliverables, actions, quality_goals):
     return signals >= 3
 
 
+def infer_task_stage(text, deliverables, actions, process_intents):
+    if contains_any(text, TASK_STAGE_PATTERNS["validation"]) or "debugging" in process_intents or "reviewing" in process_intents:
+        return "validation"
+    if contains_any(text, TASK_STAGE_PATTERNS["delivery"]) or any(
+        item in {"document", "presentation", "pdf", "spreadsheet"} for item in deliverables
+    ):
+        return "delivery"
+    if contains_any(text, TASK_STAGE_PATTERNS["design"]) or any(item in {"diagram", "image", "browser"} for item in deliverables):
+        return "design"
+    if contains_any(text, TASK_STAGE_PATTERNS["architecture"]):
+        return "architecture"
+    if contains_any(text, OPEN_ENDED_BUILD_PATTERNS) or process_intents:
+        return "discovery"
+    if contains_any(text, TASK_STAGE_PATTERNS["implementation"]) and not contains_any(text, TASK_STAGE_PATTERNS["design"]):
+        return "implementation"
+    if actions == ["create"] and not deliverables:
+        return "discovery"
+    return "delivery" if deliverables else "discovery"
+
+
+def infer_needed_capability_groups(text, deliverables, actions, quality_goals, process_intents, task_stage):
+    groups = []
+
+    def add(group_name):
+        if group_name not in groups:
+            groups.append(group_name)
+
+    if task_stage == "discovery" or any(intent in process_intents for intent in ("planning", "brainstorming")):
+        add("product-definition")
+    if task_stage == "architecture" or contains_any(text, CAPABILITY_GROUP_PATTERNS["architecture"]):
+        add("architecture")
+    if (
+        task_stage in {"discovery", "design", "delivery"}
+        or any(goal in {"clarity", "teachability"} for goal in quality_goals)
+        or any(item in {"diagram", "presentation", "document"} for item in deliverables)
+    ):
+        add("information-design")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["ui-design"]):
+        add("ui-design")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["frontend"]) and (
+        task_stage in {"design", "implementation"} or contains_any(text, TASK_STAGE_PATTERNS["implementation"])
+    ):
+        add("frontend")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["backend"]) or task_stage == "architecture":
+        if contains_any(text, CAPABILITY_GROUP_PATTERNS["backend"]):
+            add("backend")
+    if task_stage == "validation" or contains_any(text, CAPABILITY_GROUP_PATTERNS["testing"]):
+        add("testing")
+    if any(item in {"document", "presentation", "pdf", "spreadsheet"} for item in deliverables) or contains_any(
+        text, CAPABILITY_GROUP_PATTERNS["documentation"]
+    ):
+        add("documentation")
+
+    return groups
+
+
 def infer_task(task_text):
     deliverables = infer_deliverables(task_text)
     actions = infer_actions(task_text, deliverables)
     quality_goals = infer_quality_goals(task_text)
+    quality_goals = merge_ordered_values(
+        quality_goals,
+        infer_latent_quality_goals(task_text, deliverables, actions, quality_goals),
+    )
     process_intents = infer_process_intents(task_text)
     primary_deliverable = deliverables[0] if deliverables else None
+    task_stage = infer_task_stage(task_text, deliverables, actions, process_intents)
+    needed_capability_groups = infer_needed_capability_groups(
+        task_text,
+        deliverables,
+        actions,
+        quality_goals,
+        process_intents,
+        task_stage,
+    )
 
     required_capabilities = []
     if primary_deliverable:
@@ -443,10 +801,13 @@ def infer_task(task_text):
             "quality_goals": quality_goals,
             "bounded_request": bounded_request,
             "process_intents": process_intents,
+            "task_stage": task_stage,
+            "needed_capability_groups": needed_capability_groups,
             "user_language": "zh" if prefers_chinese(task_text) else "en",
         },
         "required_capabilities": required_capabilities,
         "optional_support_capabilities": optional_support,
+        "needed_capability_groups": needed_capability_groups,
         "process_intents": process_intents,
     }
 
@@ -491,6 +852,91 @@ def compact_constraints_for_reasoning(constraints):
     return compact
 
 
+def infer_executor_capability_groups(text, capabilities, constraints):
+    groups = []
+
+    def add(group_name):
+        if group_name not in groups:
+            groups.append(group_name)
+
+    if constraints.get("process_only") and (
+        contains_any(text, CAPABILITY_GROUP_PATTERNS["product-definition"])
+        or contains_any(text, PROCESS_INTENT_PATTERNS["planning"] + PROCESS_INTENT_PATTERNS["brainstorming"])
+    ):
+        add("product-definition")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["architecture"]):
+        add("architecture")
+    if "information-design" in capabilities or contains_any(text, CAPABILITY_GROUP_PATTERNS["information-design"]):
+        add("information-design")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["ui-design"]):
+        add("ui-design")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["frontend"]):
+        add("frontend")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["backend"]):
+        add("backend")
+    if contains_any(text, CAPABILITY_GROUP_PATTERNS["testing"]):
+        add("testing")
+    if any(item in capabilities for item in {"document", "presentation", "pdf", "spreadsheet"}) or contains_any(
+        text, CAPABILITY_GROUP_PATTERNS["documentation"]
+    ):
+        add("documentation")
+    return groups
+
+
+def infer_executor_preferred_task_stages(text, capabilities, constraints):
+    stages = []
+
+    def add(stage_name):
+        if stage_name not in stages:
+            stages.append(stage_name)
+
+    if constraints.get("process_only"):
+        if contains_any(text, PROCESS_INTENT_PATTERNS["planning"] + PROCESS_INTENT_PATTERNS["brainstorming"]):
+            add("discovery")
+        if contains_any(text, ACTION_PATTERNS["review"] + PROCESS_INTENT_PATTERNS["reviewing"] + PROCESS_INTENT_PATTERNS["debugging"]):
+            add("validation")
+        if contains_any(text, ["implementation", "execute", "执行", "落地", "开发"]) and "validation" not in stages:
+            add("implementation")
+
+    if any(item in capabilities for item in {"document", "presentation", "pdf", "spreadsheet"}):
+        add("delivery")
+    if any(item in capabilities for item in {"diagram", "image"}):
+        add("design")
+    if "browser" in capabilities:
+        add("design")
+        add("validation")
+    if "review" in capabilities:
+        add("validation")
+    if "research" in capabilities and "discovery" not in stages:
+        add("discovery")
+
+    if contains_any(text, TASK_STAGE_PATTERNS["architecture"]):
+        add("architecture")
+    if contains_any(text, TASK_STAGE_PATTERNS["design"]):
+        add("design")
+    if contains_any(text, TASK_STAGE_PATTERNS["implementation"]):
+        add("implementation")
+    if contains_any(text, TASK_STAGE_PATTERNS["validation"]):
+        add("validation")
+
+    return stages
+
+
+def should_use_strict_profile(entry):
+    return entry.get("profile_mode") == "strict"
+
+
+def is_route_visible(entry):
+    return entry.get("route_visibility", "visible") != "hidden"
+
+
+def has_route_trigger_match(task_text, executor):
+    trigger_keywords = executor.get("route_trigger_keywords", [])
+    if not trigger_keywords:
+        return True
+    return contains_any(task_text, trigger_keywords)
+
+
 def summarize_executor_for_reasoning(executor, summary_config=None):
     summary_config = summary_config or {}
     description_max_chars = int(summary_config.get("description_max_chars", 140))
@@ -503,6 +949,8 @@ def summarize_executor_for_reasoning(executor, summary_config=None):
         "source": executor.get("source"),
         "tool_family": executor.get("tool_family"),
         "capabilities": list(executor.get("capabilities", []))[:capabilities_limit],
+        "capability_groups": list(executor.get("capability_groups", []))[:capabilities_limit],
+        "preferred_task_stages": list(executor.get("preferred_task_stages", []))[:4],
         "keywords": list(executor.get("keywords", []))[:keywords_limit],
         "description": truncate_text(executor.get("description", ""), description_max_chars),
         "constraints": compact_constraints_for_reasoning(executor.get("constraints", {})),
@@ -537,8 +985,10 @@ def score_executor_for_stage_one(task_info, executor):
     reasons = []
     required = set(task_info.get("required_capabilities", []))
     optional = set(task_info.get("optional_support_capabilities", []))
+    capability_groups = set(task_info.get("needed_capability_groups", []))
     process_intents = task_info.get("process_intents", [])
     task_profile = task_info.get("task_profile", {})
+    task_stage = task_profile.get("task_stage")
     bounded_request = bool(task_profile.get("bounded_request"))
     has_deliverable = bool(task_profile.get("deliverable"))
     open_ended_process_task = not has_deliverable and (
@@ -546,15 +996,19 @@ def score_executor_for_stage_one(task_info, executor):
     )
 
     capabilities = set(executor.get("capabilities", []))
+    executor_capability_groups = set(executor.get("capability_groups", []))
+    preferred_task_stages = set(executor.get("preferred_task_stages", []))
     deliverable_caps = set(executor.get("deliverable_capabilities", []))
     support_caps = set(executor.get("support_capabilities", []))
     constraints = executor.get("constraints", {})
     text_tokens = set(task_info.get("tokens", []))
     keyword_overlap = text_tokens & set(executor.get("keywords", []))
     description_overlap = text_tokens & tokenize(executor.get("description", ""))
+    route_trigger_match = has_route_trigger_match(task_info.get("task", ""), executor)
 
     required_overlap = capabilities & required
     optional_overlap = (capabilities | support_caps) & optional
+    capability_group_overlap = executor_capability_groups & capability_groups
 
     if required_overlap:
         score += 80 + 25 * len(required_overlap)
@@ -565,25 +1019,65 @@ def score_executor_for_stage_one(task_info, executor):
     if optional_overlap:
         score += 24 * len(optional_overlap)
         reasons.append("support-capability")
+    if capability_group_overlap:
+        score += 18 * len(capability_group_overlap)
+        reasons.append("capability-group")
+    if task_stage and task_stage in preferred_task_stages:
+        score += 28
+        reasons.append("stage-match")
     if keyword_overlap:
         score += 4 * len(keyword_overlap)
         reasons.append("keyword-overlap")
     if description_overlap:
         score += 2 * len(description_overlap)
         reasons.append("description-overlap")
+    if not route_trigger_match:
+        score -= 70
+        reasons.append("route-trigger-miss")
+    if (
+        has_deliverable
+        and deliverable_caps
+        and task_profile.get("deliverable") not in deliverable_caps
+        and not required_overlap
+    ):
+        score -= 72 if bounded_request else 36
+        reasons.append("deliverable-mismatch")
+    if (
+        not has_deliverable
+        and deliverable_caps
+        and "delivery" in preferred_task_stages
+        and task_stage
+        and task_stage != "delivery"
+        and not required_overlap
+        and not optional_overlap
+    ):
+        score -= 18
+        reasons.append("off-stage-artifact-penalty")
 
     process_score = process_intent_match_score(executor, process_intents)
-    if process_score:
+    if process_score and (
+        not constraints.get("process_only")
+        or capability_group_overlap
+        or (task_stage and task_stage in preferred_task_stages)
+        or not preferred_task_stages
+    ):
         score += process_score
         reasons.append("process-intent")
 
     if constraints.get("process_only"):
+        if task_stage and preferred_task_stages and task_stage not in preferred_task_stages and not capability_group_overlap:
+            score -= 15
+            reasons.append("off-stage-process-penalty")
         if bounded_request and has_deliverable:
             score -= 120
             reasons.append("bounded-process-penalty")
         elif open_ended_process_task:
-            score += 30
-            reasons.append("open-ended-process-boost")
+            if capability_group_overlap or (task_stage and task_stage in preferred_task_stages) or not preferred_task_stages:
+                score += 30
+                reasons.append("open-ended-process-boost")
+            else:
+                score -= 20
+                reasons.append("open-ended-process-mismatch")
         elif not process_intents:
             score -= 40
             reasons.append("unneeded-process-penalty")
@@ -600,6 +1094,17 @@ def score_executor_for_stage_one(task_info, executor):
             reasons.append("tool-capability")
         elif constraints.get("manifest_only") and not keyword_overlap and not description_overlap:
             score -= 8
+        if (
+            task_stage == "discovery"
+            and open_ended_process_task
+            and constraints.get("manifest_only")
+            and not required_overlap
+            and not optional_overlap
+            and not keyword_overlap
+            and not description_overlap
+        ):
+            score -= 40
+            reasons.append("discovery-mcp-no-trigger")
 
     if executor.get("name", "").lower() in normalize_text(task_info.get("task", "")):
         score += 18
@@ -619,6 +1124,7 @@ def classify_stage_one_bucket(task_info, executor):
 
     required = set(task_info.get("required_capabilities", []))
     optional = set(task_info.get("optional_support_capabilities", []))
+    capability_groups = set(task_info.get("needed_capability_groups", []))
     task_profile = task_info.get("task_profile", {})
     deliverable_caps = set(executor.get("deliverable_capabilities", []))
     support_caps = set(executor.get("support_capabilities", []))
@@ -628,9 +1134,11 @@ def classify_stage_one_bucket(task_info, executor):
         return "artifact_skill"
     if optional & (capabilities | support_caps):
         return "support_skill"
+    if capability_groups & set(executor.get("capability_groups", [])) and not deliverable_caps:
+        return "support_skill"
     if task_profile.get("deliverable") and task_profile["deliverable"] in deliverable_caps:
         return "artifact_skill"
-    if support_caps:
+    if support_caps and not deliverable_caps:
         return "support_skill"
     return "fallback"
 
@@ -763,10 +1271,16 @@ def prepare_reasoning_executors(task_info, executors, config):
         fallback_candidates.append(entry)
 
     for entry in artifact_candidates[:artifact_skill_limit]:
+        if entry["score"] <= 0:
+            continue
         add_entry(entry, "artifact-slot")
     for entry in support_candidates[:support_skill_limit]:
+        if entry["score"] <= 0:
+            continue
         add_entry(entry, "support-slot", allow_overflow=len(selected) >= candidate_limit)
     for entry in mcp_candidates[:mcp_limit]:
+        if entry["score"] <= 0:
+            continue
         add_entry(entry, "mcp-slot", allow_overflow=len(selected) >= candidate_limit)
     for entry in fallback_candidates:
         if entry["score"] <= 0 and selected:
@@ -859,9 +1373,13 @@ def enrich_executor(entry):
     description = entry.get("description", "")
     keywords = sorted(set(entry.get("keywords", [])) | tokenize(f"{name} {description} {' '.join(entry.get('keywords', []))}"))
     seeded_capabilities = list(entry.get("capabilities", []))
-    inferred_capabilities, inferred_deliverables, inferred_support = infer_capabilities_from_text(
-        f"{name} {description} {' '.join(keywords)}"
-    )
+    strict_profile = should_use_strict_profile(entry)
+    if strict_profile:
+        inferred_capabilities, inferred_deliverables, inferred_support = [], [], []
+    else:
+        inferred_capabilities, inferred_deliverables, inferred_support = infer_capabilities_from_text(
+            f"{name} {description} {' '.join(keywords)}"
+        )
 
     capabilities = []
     for capability in seeded_capabilities + inferred_capabilities:
@@ -894,12 +1412,37 @@ def enrich_executor(entry):
         constraints["context_only"] = True
         constraints["read_only"] = True
 
+    capability_groups = [] if strict_profile else infer_executor_capability_groups(
+        f"{name} {description} {' '.join(keywords)}",
+        capabilities,
+        constraints,
+    )
+    explicit_capability_groups = list(entry.get("capability_groups", []))
+    if explicit_capability_groups:
+        capability_groups = merge_ordered_values(explicit_capability_groups, capability_groups) if not strict_profile else explicit_capability_groups
+    preferred_task_stages = list(entry.get("preferred_task_stages", []))
+    if not strict_profile:
+        preferred_task_stages = merge_ordered_values(
+            preferred_task_stages,
+            infer_executor_preferred_task_stages(
+                f"{name} {description} {' '.join(keywords)}",
+                capabilities,
+                constraints,
+            ),
+        )
+
     enriched = dict(entry)
     enriched["keywords"] = keywords
     enriched["capabilities"] = capabilities
+    enriched["capability_groups"] = capability_groups
+    enriched["preferred_task_stages"] = preferred_task_stages
     enriched["deliverable_capabilities"] = deliverable_capabilities
     enriched["support_capabilities"] = support_capabilities
     enriched["constraints"] = constraints
+    enriched["route_visibility"] = entry.get("route_visibility", "visible")
+    enriched["route_trigger_keywords"] = list(entry.get("route_trigger_keywords", []))
+    if strict_profile:
+        enriched["profile_mode"] = "strict"
     return enriched
 
 
@@ -918,9 +1461,16 @@ def dedupe_entries(entries, key_fields=None):
 
 def merge_executor_with_index(executor, index_entry):
     merged = dict(executor)
+    for key in ("profile_mode", "route_visibility", "process_only", "route_trigger_keywords"):
+        if key in index_entry:
+            merged[key] = index_entry.get(key)
     merged["keywords"] = sorted(set(executor.get("keywords", [])) | set(index_entry.get("keywords", [])))
     merged["capabilities"] = list(index_entry.get("capabilities", executor.get("capabilities", [])))
-    if index_entry.get("description") and not executor.get("description"):
+    if "capability_groups" in index_entry:
+        merged["capability_groups"] = list(index_entry.get("capability_groups", []))
+    if "preferred_task_stages" in index_entry:
+        merged["preferred_task_stages"] = list(index_entry.get("preferred_task_stages", []))
+    if index_entry.get("description") and (not executor.get("description") or index_entry.get("profile_mode") == "strict"):
         merged["description"] = index_entry["description"]
     merged_constraints = dict(executor.get("constraints", {}))
     merged_constraints.update(index_entry.get("constraints", {}))
@@ -940,7 +1490,15 @@ def load_router_assets(base_dir):
         item.setdefault("tool_family", "skill-index")
         item.setdefault("invocation_ref", item.get("path"))
         local_index.append(enrich_executor(item))
-    return config, local_index
+    executor_profiles = []
+    profiles_path = assets_dir / "executor-profiles.json"
+    if profiles_path.exists():
+        for entry in load_json(profiles_path):
+            item = dict(entry)
+            item.setdefault("executor_type", "skill")
+            item.setdefault("source", "local-profile")
+            executor_profiles.append(enrich_executor(item))
+    return config, local_index, executor_profiles
 
 
 def build_install_url(entry):

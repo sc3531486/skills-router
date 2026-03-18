@@ -13,6 +13,12 @@ from router_lib import (
     summarize_executor_for_reasoning,
 )
 
+EXPECTED_REFLECTION_ROLE_IDS = [
+    "delivery-role",
+    "quality-critic-role",
+    "design-editor-role",
+]
+
 
 def load_json(path_text):
     with open(expand_path(path_text), "r", encoding="utf-8") as handle:
@@ -47,6 +53,142 @@ def normalize_reasoning_config(config):
     stage_one.setdefault("capabilities_limit", 8)
     reasoning["stage_one"] = stage_one
     return reasoning
+
+
+def build_reflection_roles(task_info):
+    use_chinese = prefers_chinese(task_info.get("task", ""))
+    if use_chinese:
+        return [
+            {
+                "role_id": "delivery-role",
+                "title": "交付负责人",
+                "responsibility": "先判断怎样才能稳定交付用户要的结果，确保主产物、执行顺序、依赖和可执行性都成立。",
+                "questions": [
+                    "当前路线是否真的能产出用户要的结果？",
+                    "主执行器是否选对了？",
+                    "步骤顺序、输入依赖、上下文来源是否完整？",
+                ],
+            },
+            {
+                "role_id": "quality-critic-role",
+                "title": "质量审稿人",
+                "responsibility": "主动挑战“只是能做”而不是“做到最好”的路线，找出隐藏质量要求、明显短板、遗漏验证和可补强点。",
+                "questions": [
+                    "这条路线是不是只满足了最低功能，而没有达到应有质量？",
+                    "还有哪些清晰度、准确性、专业度、完整性或验收风险没有覆盖？",
+                    "是否需要增加支持型 skill 或 MCP，才能明显提升结果质量？",
+                ],
+            },
+            {
+                "role_id": "design-editor-role",
+                "title": "设计与编辑负责人",
+                "responsibility": "从信息设计、表达结构、可读性、视觉质量和受众适配的角度审视路线，避免结果虽然完成但体验粗糙。",
+                "questions": [
+                    "结果是否足够清晰、易读、结构合理？",
+                    "是否需要额外考虑版式、视觉层次、叙事顺序、受众理解成本或编辑体验？",
+                    "有没有值得主动补强的地方，让最终结果更专业、更好用？",
+                ],
+            },
+        ]
+    return [
+        {
+            "role_id": "delivery-role",
+            "title": "Delivery Lead",
+            "responsibility": "Ensure the route can reliably produce the requested outcome, with the right primary executor, step order, dependencies, and execution feasibility.",
+            "questions": [
+                "Can this route actually produce the requested outcome?",
+                "Is the primary executor the right one?",
+                "Are the step order, inputs, and context dependencies complete?",
+            ],
+        },
+        {
+            "role_id": "quality-critic-role",
+            "title": "Quality Critic",
+            "responsibility": "Challenge routes that only satisfy the minimum functional bar and surface hidden quality requirements, weak spots, missing validation, and worthwhile upgrades.",
+            "questions": [
+                "Does this route only satisfy the minimum functional request instead of the best practical result?",
+                "What quality gaps, risks, or validation holes are still uncovered?",
+                "Would any support skill or MCP materially improve the output quality?",
+            ],
+        },
+        {
+            "role_id": "design-editor-role",
+            "title": "Design and Editor",
+            "responsibility": "Review the route for information design, readability, structure, visual polish, and audience fit so the outcome is not merely complete but well-shaped.",
+            "questions": [
+                "Will the result be clear, readable, and well-structured?",
+                "Should layout, visual hierarchy, narrative flow, audience fit, or editability be improved?",
+                "What is worth polishing proactively before calling the plan good enough?",
+            ],
+        },
+    ]
+
+
+def build_completion_directive(task_info):
+    if prefers_chinese(task_info.get("task", "")):
+        return {
+            "quality_bar": "best-practical",
+            "instruction": "请先分别以 delivery-role、quality-critic-role、design-editor-role 三个角色审视任务，再综合成最小但高质量的执行方案。不要只回答“哪个执行器能做”，而要回答“怎样编排才能把结果做到最好且不过度堆叠”。",
+        }
+    return {
+        "quality_bar": "best-practical",
+        "instruction": "Review the task through delivery-role, quality-critic-role, and design-editor-role before synthesizing the route. Do not stop at 'which executor can do it'; decide 'which orchestration yields the best practical result without unnecessary bloat'.",
+    }
+
+
+def is_quality_sensitive_task_profile(task_profile):
+    task_profile = task_profile or {}
+    actions = set(task_profile.get("actions", []))
+    quality_goals = set(task_profile.get("quality_goals", []))
+    if "optimize" in actions:
+        return True
+    if quality_goals & {"visual-polish", "clarity", "teachability"}:
+        return True
+    return bool(task_profile.get("deliverable") and len(quality_goals) >= 2)
+
+
+def build_second_pass_directive(task_info):
+    quality_sensitive = is_quality_sensitive_task_profile(task_info.get("task_profile", {}))
+    if prefers_chinese(task_info.get("task", "")):
+        return {
+            "enabled": True,
+            "quality_sensitive": quality_sensitive,
+            "instruction": "先给出候选路线，再做第二轮反思：假设自己是高标准用户，检查这条路线是不是只是把任务做完，而没有把结果做得更好。如果仍有明显可补强点，就不要直接通过。",
+            "questions": [
+                "这条路线是不是只是功能上能做，而不是结果上够好？",
+                "如果用户要求更专业、更清晰、更有完成度，当前路线还差什么？",
+                "有没有低成本但高价值的补强动作，应该写进路线或写进每步验收检查？",
+            ],
+        }
+    return {
+        "enabled": True,
+        "quality_sensitive": quality_sensitive,
+        "instruction": "After drafting the route, run a second-pass review from the perspective of a demanding user. If the route is merely functional and still misses obvious quality upgrades, do not approve it yet.",
+        "questions": [
+            "Is this route only functionally sufficient rather than genuinely good enough?",
+            "What would still feel underpowered to a demanding user who cares about quality and finish?",
+            "Which low-cost, high-value improvements should be added to the route or to step-level review checks?",
+        ],
+    }
+
+
+def build_quality_gate_policy(task_info):
+    quality_sensitive = is_quality_sensitive_task_profile(task_info.get("task_profile", {}))
+    if prefers_chinese(task_info.get("task", "")):
+        return {
+            "quality_sensitive": quality_sensitive,
+            "require_quality_gate": True,
+            "require_second_pass_review": True,
+            "require_step_improvement_checks_for_bare_routes": quality_sensitive,
+            "instruction": "如果这是优化类或质量敏感任务，就不能只因为某个执行器“能做”而通过。若路线仍然是单一裸执行器，必须额外给出明确的主动补强检查，或者重编排路线。",
+        }
+    return {
+        "quality_sensitive": quality_sensitive,
+        "require_quality_gate": True,
+        "require_second_pass_review": True,
+        "require_step_improvement_checks_for_bare_routes": quality_sensitive,
+        "instruction": "For optimization or quality-sensitive tasks, do not approve a route only because one executor can technically do it. If the route stays bare and single-executor, add explicit proactive improvement checks or re-orchestrate it.",
+    }
 
 
 def load_host_model_settings(reasoning_config):
@@ -92,6 +234,11 @@ def build_reasoning_input(task_info, executors, policy_constraints, mode, stage_
     return {
         "task": task_info["task"],
         "task_profile_seed": task_info["task_profile"],
+        "task_stage_seed": task_info["task_profile"].get("task_stage"),
+        "needed_capability_group_hints": task_info.get(
+            "needed_capability_groups",
+            task_info["task_profile"].get("needed_capability_groups", []),
+        ),
         "required_capability_hints": task_info.get("required_capabilities", []),
         "optional_support_capability_hints": task_info.get("optional_support_capabilities", []),
         "available_executors": [
@@ -99,6 +246,10 @@ def build_reasoning_input(task_info, executors, policy_constraints, mode, stage_
             for item in executors
         ],
         "stage_one_selection": stage_one_meta or {},
+        "reflection_roles": build_reflection_roles(task_info),
+        "completion_directive": build_completion_directive(task_info),
+        "second_pass_directive": build_second_pass_directive(task_info),
+        "quality_gate_policy": build_quality_gate_policy(task_info),
         "policy_constraints": policy_constraints,
         "missing_capabilities_if_any": [],
         "execution_mode": mode,
@@ -114,6 +265,9 @@ Do not invent executor ids.
 Do not use process-only skills for bounded artifact requests.
 Do not use mcp_resource as the final artifact-producing step.
 Treat task_profile_seed and capability hints as weak heuristic inputs that you may correct.
+Do not confuse "can edit the artifact" with "can produce the best result".
+For optimization, polishing, improvement, or refinement requests, explicitly reason about hidden quality dimensions such as information hierarchy, readability, layout, visual polish, professionalism, and audience fit before choosing the route.
+If one executor can produce the artifact but optional support capabilities would materially improve quality, reflect that in candidate_plans and minimal_high_quality_combo instead of defaulting to a single bare functional executor.
 Return valid JSON only.
 
 Required JSON shape:
@@ -125,11 +279,38 @@ Required JSON shape:
     "quality_goals": ["string"],
     "bounded_request": true,
     "process_intents": ["string"],
+    "task_stage": "string",
+    "needed_capability_groups": ["string"],
     "user_language": "string"
   },
   "needed_capabilities": ["string"],
   "required_capabilities": ["string"],
   "optional_support_capabilities": ["string"],
+  "role_findings": [
+    {
+      "role_id": "string",
+      "conclusion": "string",
+      "concerns": ["string"],
+      "suggested_capabilities": ["string"]
+    }
+  ],
+  "completion_assessment": {
+    "quality_bar": "minimum|strong|best-practical",
+    "baseline_satisfied": true,
+    "quality_risks": ["string"],
+    "optimization_opportunities": ["string"],
+    "reason": "string"
+  },
+  "quality_gate": {
+    "status": "pass|fail",
+    "reason": "string",
+    "blocking_issues": ["string"]
+  },
+  "second_pass_review": {
+    "verdict": "good-enough|revise-route",
+    "reason": "string",
+    "follow_up_actions": ["string"]
+  },
   "minimal_high_quality_combo": [
     {
       "executor_id": "string",
@@ -149,7 +330,8 @@ Required JSON shape:
     {
       "step_id": "string",
       "summary_template": "string",
-      "acceptance_criteria": ["string"]
+      "acceptance_criteria": ["string"],
+      "improvement_checks": ["string"]
     }
   ],
   "candidate_plans": [
@@ -199,6 +381,10 @@ def build_host_reasoning_contract():
             "needed_capabilities",
             "required_capabilities",
             "optional_support_capabilities",
+            "role_findings",
+            "completion_assessment",
+            "quality_gate",
+            "second_pass_review",
             "minimal_high_quality_combo",
             "missing_executors",
             "step_acceptance_blueprint",
@@ -215,6 +401,9 @@ def build_host_reasoning_contract():
             "Do not invent executor ids.",
             "Open-ended tasks may choose a process route when appropriate.",
             "If required capabilities are missing locally, prefer an install-first route over pretending the executor already exists.",
+            "For optimization or polishing tasks, reflect on hidden quality goals such as clarity, visual polish, readability, professionalism, and information design before choosing the route.",
+            "Return role_findings for all reflection roles and a completion_assessment before choosing the final route.",
+            "After choosing a tentative route, run a second-pass review and return quality_gate plus second_pass_review.",
         ],
     }
 
@@ -272,6 +461,10 @@ def ensure_decision_shape(decision):
         "needed_capabilities",
         "required_capabilities",
         "optional_support_capabilities",
+        "role_findings",
+        "completion_assessment",
+        "quality_gate",
+        "second_pass_review",
         "minimal_high_quality_combo",
         "missing_executors",
         "step_acceptance_blueprint",
@@ -288,7 +481,43 @@ def ensure_decision_shape(decision):
             if key in {"minimal_high_quality_combo", "missing_executors", "step_acceptance_blueprint"}:
                 decision[key] = []
                 continue
+            if key in {"role_findings", "completion_assessment", "quality_gate", "second_pass_review"}:
+                raise ValueError(
+                    f"Model decision is missing required key '{key}'. Host reasoning must include role-split reflection output."
+                )
             raise ValueError(f"Model decision is missing required key '{key}'.")
+    if not isinstance(decision.get("role_findings"), list):
+        raise ValueError("Model decision field 'role_findings' must be a list.")
+    findings_by_role = {}
+    for item in decision["role_findings"]:
+        role_id = item.get("role_id")
+        if not role_id:
+            raise ValueError("Each role finding must include role_id.")
+        findings_by_role[role_id] = item
+    missing_roles = [role_id for role_id in EXPECTED_REFLECTION_ROLE_IDS if role_id not in findings_by_role]
+    if missing_roles:
+        raise ValueError(
+            f"Model decision is missing role findings for: {', '.join(missing_roles)}."
+        )
+    if not isinstance(decision.get("completion_assessment"), dict):
+        raise ValueError("Model decision field 'completion_assessment' must be an object.")
+    for key in ("quality_bar", "baseline_satisfied", "quality_risks", "optimization_opportunities", "reason"):
+        if key not in decision["completion_assessment"]:
+            raise ValueError(
+                f"Model decision completion_assessment is missing required key '{key}'."
+            )
+    quality_gate = decision.get("quality_gate")
+    if not isinstance(quality_gate, dict):
+        raise ValueError("Model decision field 'quality_gate' must be an object.")
+    for key in ("status", "reason", "blocking_issues"):
+        if key not in quality_gate:
+            raise ValueError(f"Model decision quality_gate is missing required key '{key}'.")
+    second_pass_review = decision.get("second_pass_review")
+    if not isinstance(second_pass_review, dict):
+        raise ValueError("Model decision field 'second_pass_review' must be an object.")
+    for key in ("verdict", "reason", "follow_up_actions"):
+        if key not in second_pass_review:
+            raise ValueError(f"Model decision second_pass_review is missing required key '{key}'.")
     if not isinstance(decision["candidate_plans"], list) or not decision["candidate_plans"]:
         raise ValueError("Model decision must include at least one candidate plan.")
     chosen_plan = None
@@ -321,9 +550,12 @@ def ensure_decision_shape(decision):
                     "acceptance_criteria": [
                         f"Matches expected output: {step.get('expected_output') or step.get('purpose') or 'step output'}"
                     ],
+                    "improvement_checks": [],
                 }
             )
         decision["step_acceptance_blueprint"] = blueprints
+    for blueprint in decision.get("step_acceptance_blueprint", []):
+        blueprint.setdefault("improvement_checks", [])
     return decision
 
 

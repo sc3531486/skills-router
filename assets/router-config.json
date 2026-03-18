@@ -2,6 +2,11 @@
   "mode": "explicit",
   "allow_install_recommendations": true,
   "allow_auto_install": false,
+  "session_routing": {
+    "sticky_after_explicit_activation": true,
+    "auto_reroute_on_trigger": true,
+    "require_explicit_invocation_only_for_first_use": true
+  },
   "preferred_sources": [
     "local-skill",
     "mcp-session",

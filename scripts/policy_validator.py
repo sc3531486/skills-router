@@ -15,6 +15,12 @@ def find_plan(decision, plan_id):
 
 
 DEPENDENCY_TOKEN_RE = re.compile(r"[a-z0-9]+")
+REQUIRED_REFLECTION_ROLE_IDS = {
+    "delivery-role",
+    "quality-critic-role",
+    "design-editor-role",
+}
+QUALITY_CRITIC_ROLE_IDS = {"quality-critic-role", "design-editor-role"}
 
 
 def normalize_dependency_label(value):
@@ -98,9 +104,36 @@ def validate_route(task_info, decision, executors, policy_constraints=None):
     task_profile = task_info.get("task_profile", {})
     bounded_request = bool(task_profile.get("bounded_request"))
     has_deliverable = bool(task_profile.get("deliverable"))
+    role_findings = decision.get("role_findings", [])
+    role_ids = {item.get("role_id") for item in role_findings if item.get("role_id")}
+    missing_roles = sorted(REQUIRED_REFLECTION_ROLE_IDS - role_ids)
+    actions = set(task_profile.get("actions", []))
+    quality_goals = set(task_profile.get("quality_goals", []))
+    quality_sensitive = (
+        "optimize" in actions
+        or bool(quality_goals & {"visual-polish", "clarity", "teachability"})
+        or bool(task_profile.get("deliverable") and len(quality_goals) >= 2)
+    )
 
     if decision.get("missing_required_capabilities"):
         errors.append("Chosen route still reports missing required capabilities.")
+    if missing_roles:
+        errors.append(
+            f"Chosen route is missing required role-split reflection findings for: {', '.join(missing_roles)}."
+        )
+    completion_assessment = decision.get("completion_assessment")
+    if not isinstance(completion_assessment, dict):
+        errors.append("Chosen route is missing a valid completion_assessment block.")
+    quality_gate = decision.get("quality_gate")
+    if not isinstance(quality_gate, dict):
+        errors.append("Chosen route is missing a valid quality_gate block.")
+    elif str(quality_gate.get("status", "")).lower() != "pass":
+        errors.append("Chosen route did not pass the quality gate.")
+    second_pass_review = decision.get("second_pass_review")
+    if not isinstance(second_pass_review, dict):
+        errors.append("Chosen route is missing a valid second_pass_review block.")
+    elif str(second_pass_review.get("verdict", "")).lower() != "good-enough":
+        errors.append("Chosen route did not pass the second-pass reflection review.")
 
     step_output_labels = []
     for step in steps:
@@ -169,6 +202,31 @@ def validate_route(task_info, decision, executors, policy_constraints=None):
             non_context_seen = True
     if seen_context_after_action:
         warnings.append("Route reads MCP resources after executable steps; verify the order is intentional.")
+
+    critical_role_findings = [
+        item for item in role_findings
+        if item.get("role_id") in QUALITY_CRITIC_ROLE_IDS
+    ]
+    unresolved_quality_concerns = any(item.get("concerns") or item.get("suggested_capabilities") for item in critical_role_findings)
+    executable_steps = [
+        step for step in steps
+        if executor_map.get(step.get("executor_id"), {}).get("executor_type") != "mcp_resource"
+    ]
+    bare_functional_route = len(executable_steps) == 1 and len(steps) == 1
+    blueprint_by_step_id = {
+        item.get("step_id"): item
+        for item in decision.get("step_acceptance_blueprint", [])
+        if item.get("step_id")
+    }
+    has_step_improvement_checks = any(
+        blueprint_by_step_id.get(step.get("step_id"), {}).get("improvement_checks")
+        for step in executable_steps
+    )
+    has_follow_up_actions = bool((second_pass_review or {}).get("follow_up_actions"))
+    if quality_sensitive and bare_functional_route and unresolved_quality_concerns and not has_step_improvement_checks and not has_follow_up_actions:
+        errors.append(
+            "Quality-sensitive route still looks bare-functional: add explicit improvement checks or re-orchestrate the plan."
+        )
 
     return {
         "is_valid": not errors,

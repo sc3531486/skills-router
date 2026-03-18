@@ -1,0 +1,278 @@
+[
+  {
+    "name": "doc",
+    "profile_mode": "strict",
+    "capabilities": ["document", "docx", "writing", "review", "visual-design"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
+    "keywords": ["docx", "word", "document", "formatting", "layout", "edit", "review"]
+  },
+  {
+    "name": "drawio",
+    "profile_mode": "strict",
+    "capabilities": ["diagram"],
+    "capability_groups": ["architecture", "information-design", "ui-design"],
+    "preferred_task_stages": ["design", "architecture", "delivery"],
+    "keywords": ["drawio", "draw.io", "diagram", "architecture", "editable", "flowchart", "system"]
+  },
+  {
+    "name": "jupyter-notebook",
+    "profile_mode": "strict",
+    "capabilities": ["analysis", "notebook", "data"],
+    "capability_groups": ["backend", "testing", "documentation"],
+    "preferred_task_stages": ["implementation", "validation", "delivery"],
+    "keywords": ["jupyter", "notebook", "analysis", "experiment", "data"]
+  },
+  {
+    "name": "pdf",
+    "profile_mode": "strict",
+    "capabilities": ["pdf", "document", "extraction", "review"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
+    "keywords": ["pdf", "extract", "annotate", "merge", "render", "review"]
+  },
+  {
+    "name": "playwright",
+    "profile_mode": "strict",
+    "capabilities": ["browser", "automation", "web", "review"],
+    "capability_groups": ["frontend", "ui-design", "testing"],
+    "preferred_task_stages": ["design", "implementation", "validation"],
+    "keywords": ["browser", "automation", "playwright", "ui", "web", "validation"]
+  },
+  {
+    "name": "screenshot",
+    "executor_type": "skill",
+    "profile_mode": "strict",
+    "capabilities": ["image", "capture"],
+    "capability_groups": ["ui-design"],
+    "preferred_task_stages": ["design", "validation"],
+    "keywords": ["screenshot", "capture", "screen", "visual"],
+    "route_trigger_keywords": ["screenshot", "screen capture", "截图", "截屏", "capture"]
+  },
+  {
+    "name": "slides",
+    "profile_mode": "strict",
+    "capabilities": ["presentation", "slides", "ppt"],
+    "capability_groups": ["documentation", "information-design", "visual-design"],
+    "preferred_task_stages": ["design", "delivery"],
+    "keywords": ["slides", "ppt", "pptx", "deck", "presentation", "powerpoint"]
+  },
+  {
+    "name": "spreadsheet",
+    "profile_mode": "strict",
+    "capabilities": ["spreadsheet", "xlsx", "csv", "table", "review"],
+    "capability_groups": ["documentation", "testing"],
+    "preferred_task_stages": ["delivery", "validation"],
+    "keywords": ["excel", "xlsx", "csv", "spreadsheet", "table", "review"]
+  },
+  {
+    "name": "brainstorming",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": ["product-definition"],
+    "preferred_task_stages": ["discovery"],
+    "constraints": {"process_only": true},
+    "keywords": ["brainstorm", "requirements", "product", "design", "clarify", "scope"]
+  },
+  {
+    "name": "dispatching-parallel-agents",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": ["implementation"],
+    "preferred_task_stages": ["implementation"],
+    "constraints": {"process_only": true},
+    "keywords": ["parallel", "agents", "independent", "tasks"]
+  },
+  {
+    "name": "executing-plans",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": ["implementation"],
+    "preferred_task_stages": ["implementation"],
+    "constraints": {"process_only": true},
+    "keywords": ["execute", "plan", "implementation"]
+  },
+  {
+    "name": "finishing-a-development-branch",
+    "profile_mode": "strict",
+    "capabilities": ["review"],
+    "capability_groups": ["testing", "documentation"],
+    "preferred_task_stages": ["validation", "delivery"],
+    "constraints": {"process_only": true},
+    "keywords": ["finish", "branch", "merge", "pr", "cleanup"]
+  },
+  {
+    "name": "receiving-code-review",
+    "profile_mode": "strict",
+    "capabilities": ["review"],
+    "capability_groups": ["testing"],
+    "preferred_task_stages": ["validation"],
+    "constraints": {"process_only": true},
+    "keywords": ["review", "feedback", "changes", "validate"]
+  },
+  {
+    "name": "requesting-code-review",
+    "profile_mode": "strict",
+    "capabilities": ["review"],
+    "capability_groups": ["testing"],
+    "preferred_task_stages": ["validation"],
+    "constraints": {"process_only": true},
+    "keywords": ["review", "quality", "verification", "merge"]
+  },
+  {
+    "name": "subagent-driven-development",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": ["implementation"],
+    "preferred_task_stages": ["implementation"],
+    "constraints": {"process_only": true},
+    "keywords": ["subagent", "implementation", "development"]
+  },
+  {
+    "name": "systematic-debugging",
+    "profile_mode": "strict",
+    "capabilities": ["review"],
+    "capability_groups": ["testing"],
+    "preferred_task_stages": ["implementation", "validation"],
+    "constraints": {"process_only": true},
+    "keywords": ["debug", "bug", "failure", "trace", "root cause"]
+  },
+  {
+    "name": "test-driven-development",
+    "profile_mode": "strict",
+    "capabilities": ["review"],
+    "capability_groups": ["testing"],
+    "preferred_task_stages": ["implementation", "validation"],
+    "constraints": {"process_only": true},
+    "keywords": ["tdd", "test", "failing test", "red green refactor"]
+  },
+  {
+    "name": "using-git-worktrees",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": ["implementation"],
+    "preferred_task_stages": ["implementation"],
+    "constraints": {"process_only": true},
+    "keywords": ["git", "worktree", "branch", "isolation"]
+  },
+  {
+    "name": "using-superpowers",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": [],
+    "preferred_task_stages": [],
+    "constraints": {"process_only": true},
+    "route_visibility": "hidden",
+    "keywords": ["meta", "session", "skills"]
+  },
+  {
+    "name": "verification-before-completion",
+    "profile_mode": "strict",
+    "capabilities": ["review"],
+    "capability_groups": ["testing"],
+    "preferred_task_stages": ["validation"],
+    "constraints": {"process_only": true},
+    "keywords": ["verify", "validation", "checks", "completion"]
+  },
+  {
+    "name": "writing-plans",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": ["product-definition", "documentation"],
+    "preferred_task_stages": ["discovery", "implementation"],
+    "constraints": {"process_only": true},
+    "keywords": ["plan", "steps", "implementation plan", "spec"]
+  },
+  {
+    "name": "writing-skills",
+    "profile_mode": "strict",
+    "capabilities": ["documentation", "information-design"],
+    "capability_groups": ["documentation"],
+    "preferred_task_stages": ["implementation"],
+    "constraints": {"process_only": true},
+    "keywords": ["skills", "skill authoring", "documentation", "verification"]
+  },
+  {
+    "name": "skill-router",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": [],
+    "preferred_task_stages": [],
+    "route_visibility": "hidden",
+    "keywords": ["router", "orchestration", "meta"]
+  },
+  {
+    "name": "pua",
+    "profile_mode": "strict",
+    "capabilities": [],
+    "capability_groups": [],
+    "preferred_task_stages": [],
+    "route_visibility": "hidden",
+    "keywords": ["escalation", "push harder", "fallback"]
+  },
+  {
+    "name": "figma",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["visual-design", "research"],
+    "capability_groups": ["ui-design", "information-design"],
+    "preferred_task_stages": ["design", "delivery"],
+    "keywords": ["figma", "design", "prototype", "layout", "context"]
+  },
+  {
+    "name": "playwright",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["browser", "automation", "review"],
+    "capability_groups": ["frontend", "ui-design", "testing"],
+    "preferred_task_stages": ["design", "implementation", "validation"],
+    "keywords": ["playwright", "browser", "automation", "validation"]
+  },
+  {
+    "name": "notion",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["documentation"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["discovery", "delivery"],
+    "keywords": ["notion", "docs", "notes", "workspace"],
+    "route_trigger_keywords": ["notion", "wiki", "workspace", "notes", "知识库", "文档库"]
+  },
+  {
+    "name": "office-word",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["document", "review"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["delivery"],
+    "keywords": ["word", "document", "docx", "office"]
+  },
+  {
+    "name": "office-powerpoint",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["presentation"],
+    "capability_groups": ["documentation", "visual-design"],
+    "preferred_task_stages": ["delivery"],
+    "keywords": ["powerpoint", "presentation", "ppt", "slides", "office"]
+  },
+  {
+    "name": "puppeteer",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["browser", "automation"],
+    "capability_groups": ["frontend", "testing"],
+    "preferred_task_stages": ["implementation", "validation"],
+    "keywords": ["puppeteer", "browser", "automation"]
+  },
+  {
+    "name": "fetch",
+    "executor_type": "mcp_tool",
+    "profile_mode": "strict",
+    "capabilities": ["research"],
+    "capability_groups": ["documentation", "information-design"],
+    "preferred_task_stages": ["discovery", "delivery"],
+    "keywords": ["fetch", "retrieve", "resource", "read"],
+    "route_trigger_keywords": ["fetch", "retrieve", "read", "resource", "抓取", "拉取", "读取"]
+  }
+]

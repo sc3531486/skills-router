@@ -14,6 +14,17 @@ In short:
 
 > `skill-router` lets the model think first about which abilities should collaborate, then orchestrates them into a plan.
 
+The task seed is no longer limited to `deliverable + actions`.
+It now also carries two lightweight orchestration hints:
+
+- `task_stage`
+  - for example `discovery`, `architecture`, `design`, `implementation`, `validation`, `delivery`
+- `needed_capability_groups`
+  - for example `product-definition`, `information-design`, `ui-design`, `frontend`, `backend`, `testing`, `documentation`
+
+These are still heuristic hints rather than hard routing rules.
+They exist to help the host model reflect on what kind of help the task really needs before selecting concrete skills or MCP capabilities.
+
 In v3, that plan becomes a JSON-driven orchestration loop:
 
 - route the task
@@ -225,6 +236,7 @@ The intended flow is:
 3. Let the model reflect
    - correct the task understanding
    - decide which capabilities are required
+   - reflect through delivery, quality critic, and design/editor roles before choosing the route
    - compare candidate plans
    - choose the best route
 4. Validate the route with hard policy rules
@@ -248,11 +260,124 @@ Instead, the flow is:
 5. rerun `plan_route.py` with `--host-decision-file <decision.json>`
 6. receive the validated `final_plan` and `orchestration_state`
 
+The host model is expected to do more than basic executor matching.
+It should explicitly ask:
+
+- what route can actually deliver the requested result
+- what route avoids a merely functional quality bar
+- what route still deserves proactive strengthening for structure, readability, editability, or presentation
+
+That is why the reasoning packet now includes explicit role-split reflection guidance instead of a single undifferentiated planning pass.
+The packet also carries a second-pass quality review directive and a quality-gate policy so the host model cannot stop after the first plausible route.
+
+## Minimal Host Signal
+
+To avoid forcing the host to re-derive routing policy from multiple fields, `plan_route.py` now also emits a compact `host_route_signal`.
+
+It is intentionally small:
+
+- `router_state`
+- `host_next_route_decision`
+- `host_reroute_trigger_matched`
+- `matched_trigger_label`
+- `reason`
+
+The intended read pattern is:
+
+- if `host_next_route_decision = reroute-now`, the host should treat the current point as a routing boundary
+- if `host_next_route_decision = continue-current-route`, the host should keep following the accepted route until a reroute trigger appears
+
+This is only a derived shortcut over the richer routing contract; it does not replace the reflective planner itself.
+
+Alongside that, the router also emits a compact `host_turn_signal`.
+Its job is different:
+
+- `host_route_signal` answers whether the host should reroute
+- `host_turn_signal` answers what the host should do in this turn
+
+`host_turn_signal` is intentionally minimal:
+
+- `next_host_action`
+- `requires_user_visible_message`
+- `must_end_turn`
+- `after_user_confirmation_action`
+- `reason`
+
+This lets the host avoid stitching together `next_host_action`, `execution_gate`, and `orchestration_state` manually for common cases.
+
+For hosts or UI layers that want something even closer to direct user presentation, the router also emits a compact `routing_status_card`.
+
+Its job is not to replace `user_summary` or `final_plan`.
+Its job is to provide one small display-friendly status object:
+
+- `phase`
+- `headline`
+- `user_action`
+- `next_step`
+- `waiting_for_user`
+- `reason`
+
+The intended split is:
+
+- `host_route_signal`: should the host reroute?
+- `host_turn_signal`: what should the host do in this turn?
+- `routing_status_card`: what short status should the user or UI see right now?
+
 In other words:
 
 - `skill-router` prepares the reasoning packet
 - the host model performs the reflection
 - `plan_route.py` validates and materializes the resulting route
+
+## When To Use The Router
+
+`skill-router` should be treated as a stage orchestrator, not a one-shot opener and not a per-message interrupt.
+
+Recommended session model:
+
+- the user explicitly invokes `skill-router` once at the beginning
+- after that, the host treats the conversation as `router-armed`
+- the host continues the accepted route by default
+- the host reruns the router automatically only when a reroute trigger is hit
+
+So the ideal user experience is:
+
+> use `skill-router` once, then let it quietly guard the rest of the workflow
+
+The host can implement this with a 3-rule shortcut:
+
+1. If there is no accepted route yet, `reroute-now`
+2. If a reroute trigger is hit, `reroute-now`
+3. Otherwise, `continue-current-route`
+
+That shortcut is also emitted in the JSON output as `host_auto_routing_contract`.
+The host does not need to reconstruct these rules from prose; it can read:
+
+- `default_action`
+- `triggered_action`
+- `decision_rules`
+- `requires_first_explicit_activation`
+
+Use it at these moments:
+
+- `initial-routing`
+  - the first time a clear task arrives and the host needs the best initial `skills + MCP` plan
+- `stage-rerouting`
+  - the work changes stage, such as from research to writing, writing to slides, or analysis to implementation
+- `post-install-rerouting`
+  - a missing skill or MCP was installed and the plan should be rebuilt with the new capability
+- `acceptance-rerouting`
+  - a step fails acceptance, needs rollback, redo, or route rewrite
+- `improvement-rerouting`
+  - a low-cost, high-value improvement suggests that another support skill or MCP should now join the route
+- `goal-change-rerouting`
+  - the user changes the target, audience, quality bar, scope, or key constraints
+
+Do not reroute just because the conversation continues.
+Avoid rerunning the router when:
+
+- the user is only clarifying a detail within the same stage
+- the current route still fits and no new capability or quality issue has appeared
 
 This split exists on purpose:
 
@@ -291,8 +416,23 @@ In explicit mode, `final_plan` now includes:
 - `execution_gate`
 - `host_handoff_instructions`
 - `installation_gate`
+- `quality_reflection`
 
 The output also includes `orchestration_state`, which is the host-facing control protocol for the loop.
+
+`quality_reflection` is the compact user-visible proof that the route was not chosen only because it is technically possible.
+It summarizes:
+
+- the quality bar the host model thinks this route reaches
+- why that bar is acceptable
+- remaining risks or optimization opportunities
+- what each reflection role concluded
+
+`final_plan` also carries `proactive_improvement_loop`.
+This is where the router makes the "not just functional" behavior visible:
+
+- route-level follow-up actions from the second-pass review
+- step-level improvement checks that should be revisited before user acceptance
 
 These fields are meant to reduce common host mistakes, especially:
 
